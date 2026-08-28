@@ -1,0 +1,61 @@
+# Secrets — keep committed *.env.example files only
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+
+# Local databases (may contain PHI once real visits exist)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Runtime data: SQLCipher DB, Whisper cache — not source
+backend/data/
+
+# Logs and leftover debug / dry-run dumps
+*.log
+logs/
+*.dry-run.json
+dry_run*.json
+debug/
+
+# Review packets and pasted notes (not product source)
+REVIEW_PACKET.md
+**/*REVIEW_PACKET*
+**/*review-notes*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / Vite / Tauri
+node_modules/
+dist/
+build/
+desktop-app/dist/
+desktop-app/src-tauri/target/
+desktop-app/src-tauri/gen/
+
+# Synthetic / recorded audio — keep the .txt scripts
+audio_samples/*.wav
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
