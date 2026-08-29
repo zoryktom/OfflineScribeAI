@@ -1,0 +1,224 @@
+{
+  "_comment": "STARTER SET ONLY — not a complete ICD-10-CM catalog. Expand later. Do not treat unmatched diagnoses as if a code were found.",
+  "attribution": "Code and long description pairs are copied from CMS ICD-10-CM FY 2026 Code Descriptions in Tabular Order (public files at https://www.cms.gov/medicare/coding-billing/icd-10-codes). CDC/NCHS maintains ICD-10-CM; CMS publishes the files. This is a starter set of common primary-care codes for first-visit types (respiratory, hypertension, diabetes follow-up, common injuries). It is not a complete clinical coding reference and must be expanded later.",
+  "fiscal_year": "FY2026",
+  "codes": [
+    {
+      "code": "J00",
+      "description": "Acute nasopharyngitis [common cold]",
+      "aliases": ["common cold", "nasopharyngitis", "coryza"]
+    },
+    {
+      "code": "J02.9",
+      "description": "Acute pharyngitis, unspecified",
+      "aliases": ["acute pharyngitis", "sore throat", "pharyngitis"]
+    },
+    {
+      "code": "J03.90",
+      "description": "Acute tonsillitis, unspecified",
+      "aliases": ["tonsillitis", "acute tonsillitis"]
+    },
+    {
+      "code": "J06.9",
+      "description": "Acute upper respiratory infection, unspecified",
+      "aliases": [
+        "viral upper respiratory infection",
+        "upper respiratory infection",
+        "viral uri",
+        "uri",
+        "acute upper respiratory infection",
+        "upper respiratory infection nos"
+      ]
+    },
+    {
+      "code": "J11.1",
+      "description": "Influenza due to unidentified influenza virus with other respiratory manifestations",
+      "aliases": ["influenza", "flu"]
+    },
+    {
+      "code": "J18.9",
+      "description": "Pneumonia, unspecified organism",
+      "aliases": ["pneumonia"]
+    },
+    {
+      "code": "J20.9",
+      "description": "Acute bronchitis, unspecified",
+      "aliases": ["acute bronchitis"]
+    },
+    {
+      "code": "J40",
+      "description": "Bronchitis, not specified as acute or chronic",
+      "aliases": ["bronchitis", "unspecified bronchitis"]
+    },
+    {
+      "code": "J45.909",
+      "description": "Unspecified asthma, uncomplicated",
+      "aliases": ["asthma", "unspecified asthma"]
+    },
+    {
+      "code": "R05.9",
+      "description": "Cough, unspecified",
+      "aliases": ["cough", "unspecified cough"]
+    },
+    {
+      "code": "R06.02",
+      "description": "Shortness of breath",
+      "aliases": ["shortness of breath", "dyspnea on exertion"]
+    },
+    {
+      "code": "R06.00",
+      "description": "Dyspnea, unspecified",
+      "aliases": ["dyspnea"]
+    },
+    {
+      "code": "R50.9",
+      "description": "Fever, unspecified",
+      "aliases": ["fever", "low grade fever", "low-grade fever"]
+    },
+    {
+      "code": "I10",
+      "description": "Essential (primary) hypertension",
+      "aliases": ["hypertension", "high blood pressure", "essential hypertension"]
+    },
+    {
+      "code": "I11.9",
+      "description": "Hypertensive heart disease without heart failure",
+      "aliases": ["hypertensive heart disease"]
+    },
+    {
+      "code": "E11.9",
+      "description": "Type 2 diabetes mellitus without complications",
+      "aliases": ["type 2 diabetes", "diabetes mellitus type 2", "type 2 diabetes mellitus"]
+    },
+    {
+      "code": "E11.65",
+      "description": "Type 2 diabetes mellitus with hyperglycemia",
+      "aliases": ["type 2 diabetes with hyperglycemia", "hyperglycemia"]
+    },
+    {
+      "code": "E78.5",
+      "description": "Hyperlipidemia, unspecified",
+      "aliases": ["hyperlipidemia", "high cholesterol"]
+    },
+    {
+      "code": "R73.03",
+      "description": "Prediabetes",
+      "aliases": ["prediabetes"]
+    },
+    {
+      "code": "K21.9",
+      "description": "Gastro-esophageal reflux disease without esophagitis",
+      "aliases": ["gerd", "reflux", "gastroesophageal reflux"]
+    },
+    {
+      "code": "R10.9",
+      "description": "Unspecified abdominal pain",
+      "aliases": ["abdominal pain"]
+    },
+    {
+      "code": "A09",
+      "description": "Infectious gastroenteritis and colitis, unspecified",
+      "aliases": ["gastroenteritis", "infectious colitis"]
+    },
+    {
+      "code": "N39.0",
+      "description": "Urinary tract infection, site not specified",
+      "aliases": ["urinary tract infection", "uti"]
+    },
+    {
+      "code": "R51.9",
+      "description": "Headache, unspecified",
+      "aliases": ["headache"]
+    },
+    {
+      "code": "G43.909",
+      "description": "Migraine, unspecified, not intractable, without status migrainosus",
+      "aliases": ["migraine"]
+    },
+    {
+      "code": "M54.50",
+      "description": "Low back pain, unspecified",
+      "aliases": ["low back pain", "lumbago"]
+    },
+    {
+      "code": "M25.561",
+      "description": "Pain in right knee",
+      "aliases": ["right knee pain", "pain in right knee"]
+    },
+    {
+      "code": "M25.562",
+      "description": "Pain in left knee",
+      "aliases": ["left knee pain", "pain in left knee"]
+    },
+    {
+      "code": "S93.401A",
+      "description": "Sprain of unspecified ligament of right ankle, initial encounter",
+      "aliases": ["right ankle sprain"]
+    },
+    {
+      "code": "S93.402A",
+      "description": "Sprain of unspecified ligament of left ankle, initial encounter",
+      "aliases": ["left ankle sprain"]
+    },
+    {
+      "code": "W19.XXXA",
+      "description": "Unspecified fall, initial encounter",
+      "aliases": ["fall", "unspecified fall"]
+    },
+    {
+      "code": "S00.03XA",
+      "description": "Contusion of nose, initial encounter",
+      "aliases": ["nose contusion", "bruised nose"]
+    },
+    {
+      "code": "L20.9",
+      "description": "Atopic dermatitis, unspecified",
+      "aliases": ["atopic dermatitis", "eczema"]
+    },
+    {
+      "code": "F41.9",
+      "description": "Anxiety disorder, unspecified",
+      "aliases": ["anxiety", "anxiety disorder"]
+    },
+    {
+      "code": "F32.9",
+      "description": "Major depressive disorder, single episode, unspecified",
+      "aliases": ["depression", "major depressive disorder"]
+    },
+    {
+      "code": "F17.210",
+      "description": "Nicotine dependence, cigarettes, uncomplicated",
+      "aliases": ["nicotine dependence", "cigarette smoking", "tobacco dependence"]
+    },
+    {
+      "code": "Z87.891",
+      "description": "Personal history of nicotine dependence",
+      "aliases": ["history of nicotine dependence", "former smoker", "quit smoking"]
+    },
+    {
+      "code": "Z00.00",
+      "description": "Encounter for general adult medical examination without abnormal findings",
+      "aliases": ["annual exam", "general medical examination", "well visit"]
+    },
+    {
+      "code": "Z23",
+      "description": "Encounter for immunization",
+      "aliases": ["immunization", "vaccination"]
+    },
+    {
+      "code": "Z79.4",
+      "description": "Long term (current) use of insulin",
+      "aliases": ["long term insulin", "insulin use"]
+    },
+    {
+      "code": "J44.9",
+      "description": "Chronic obstructive pulmonary disease, unspecified",
+      "aliases": ["copd", "chronic obstructive pulmonary disease"]
+    },
+    {
+      "code": "R09.81",
+      "description": "Nasal congestion",
+      "aliases": ["nasal congestion", "stuffy nose"]
+    }
+  ]
+}

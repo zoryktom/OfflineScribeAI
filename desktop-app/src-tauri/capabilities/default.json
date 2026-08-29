@@ -1,0 +1,15 @@
+{
+  "identifier": "default",
+  "description": "Allow the desktop shell to talk to the local Offline Scribe API.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "http://127.0.0.1:8000/*" },
+        { "url": "http://localhost:8000/*" }
+      ]
+    }
+  ]
+}

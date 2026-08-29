@@ -1,0 +1,32 @@
+SYNTHETIC TEST DATA — NOT REAL PATIENT INFORMATION
+====================================================
+Purpose: Minor injury visit (right ankle). Tests injury coding lookup
+and whether the note adds exam findings that were not spoken.
+Source: written mock dialogue for macOS TTS (Samantha + Fred).
+Do not treat names, ages, meds, or vitals as real clinical records.
+
+---
+
+PROVIDER: What happened to the ankle?
+
+PATIENT: I stepped off a curb last night, right foot. It rolled under me. I heard a little pop. Swelled up. I can walk on it but I'm limping.
+
+PROVIDER: Can you put weight on it now? Any numbness or the foot giving way?
+
+PATIENT: I walked in from the parking lot. It hurts on the outside of the right ankle. No numbness. I iced it and took acetaminophen. I didn't take ibuprofen.
+
+PROVIDER: Any other injuries? Head hit, knee, the other ankle?
+
+PATIENT: Just the right ankle. I didn't fall all the way down. I was wearing sneakers.
+
+PROVIDER: Looking at it, there is swelling over the outside of the right ankle, no open skin. You can move your toes. I didn't get an x-ray today because you can bear weight and there is no bony point tenderness the way I checked it.
+
+PATIENT: Do I need a boot? I work retail, I'm on my feet.
+
+PROVIDER: I think this is a right ankle sprain. Rest, ice, compression, elevation. An elastic wrap is fine. Stay off uneven ground. Acetaminophen for pain. Come back or go to urgent care if it gets numb, you can't bear weight, or it is much worse in two or three days.
+
+PATIENT: Follow up?
+
+PROVIDER: If you are still limping in a week, come back and we can talk about an x-ray or a brace. Any questions?
+
+PATIENT: No. Thanks.

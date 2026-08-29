@@ -1,0 +1,47 @@
+SYNTHETIC TEST DATA — NOT REAL PATIENT INFORMATION
+====================================================
+Purpose: Offline Scribe ASR timing/accuracy fixture.
+Source: written mock dialogue, spoken with macOS text-to-speech (Samantha + Fred).
+Do not treat names, ages, meds, or vitals as real clinical records.
+
+Approximate spoken length target: a few minutes.
+
+---
+
+PROVIDER: Good morning. What brings you in today?
+
+PATIENT: I've had this cough for about a week, maybe a little more. It started after I got soaked walking to the mailbox. Low fever off and on. I'm tired of it.
+
+PROVIDER: Any shortness of breath? Chest pain? Are you coughing up anything?
+
+PATIENT: A little short of breath when I go up the hill to the clinic. No chest pain. It's a dry cough, not much sputum. I used my albuterol inhaler a few times. Uh, I dunno, maybe two or three puffs yesterday, something like that.
+
+PROVIDER: How often do you usually use the albuterol?
+
+PATIENT: Only when I walk fast or when it's cold. Not every day. Maybe twice a week.
+
+PROVIDER: Let's review your medicines. You're on lisinopril ten milligrams daily for blood pressure, metformin five hundred milligrams twice a day, and a statin, atorvastatin twenty milligrams at night. Any other meds or over-the-counter stuff?
+
+PATIENT: That's it. I take a vitamin D sometimes. NKDA, no known drug allergies. I quit smoking two years ago. I still drink coffee, not much alcohol.
+
+PROVIDER: Today's BP is one thirty eight over eighty six. Pulse eighty two. Temp ninety nine point one. O two sat ninety six percent on room air. Lungs have a few scattered wheezes, no crackles. Heart is regular.
+
+PATIENT: Is the BP okay? My home cuff was one forty something last week.
+
+PROVIDER: It's a bit high, but not an emergency. We'll keep an eye on it. The cough and low-grade fever fit a viral upper respiratory infection more than pneumonia right now. I don't think we need a chest x-ray today unless it worsens.
+
+PATIENT: Do I need an antibiotic? My sister said I should get one.
+
+PROVIDER: Not today. Antibiotics won't help a viral illness and can cause side effects. Continue the albuterol as needed. Rest, fluids, honey for the cough if you want. Hold off on ibuprofen if your stomach is sensitive; acetaminophen is fine for the fever.
+
+PATIENT: What about work? I drive a school bus.
+
+PROVIDER: Stay home until the fever is gone for twenty four hours. Mask if you have to go out. If you get worse shortness of breath, chest pain, confusion, or the fever lasts more than three days, come back or go to the E R.
+
+PATIENT: Okay. Can I get a work note? And f/u... follow up, I mean.
+
+PROVIDER: Yes. Follow up in two weeks, or sooner if you're not improving. We'll recheck BP then and look at your last A1C. If the cough is still there at f/u we can talk about inhalers or a chest film. Any questions about lisinopril or the metformin?
+
+PATIENT: No, I take them with breakfast. Thanks.
+
+PROVIDER: All right. Work excuse through Friday. Call us if symptoms worsen. Take care.

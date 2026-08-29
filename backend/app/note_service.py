@@ -134,6 +134,13 @@ def _model_is_pulled(wanted: str, available: list[str]) -> bool:
     return any(name == wanted or name.startswith(wanted + "-") for name in available)
 
 
+# Clinical notes should stay consistent across re-runs of the same transcript.
+# Ollama's default temperature (about 0.8) produced different Assessment
+# language and ICD lookup phrases on identical visits. 0.2 reduces sampling
+# noise; some local models behave oddly at literal 0, so we do not use zero.
+_NOTE_TEMPERATURE = 0.2
+
+
 def _generate_with_ollama(
     prompt_transcript: str,
     original: str | TranscriptResult,
@@ -146,6 +153,7 @@ def _generate_with_ollama(
         "prompt": SOAP_NOTE_USER_PROMPT.format(transcript=prompt_transcript),
         "stream": False,
         "format": "json",
+        "options": {"temperature": _NOTE_TEMPERATURE},
     }
     try:
         request = Request(

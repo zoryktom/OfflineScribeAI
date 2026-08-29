@@ -1,0 +1,33 @@
+SYNTHETIC TEST DATA — NOT REAL PATIENT INFORMATION
+====================================================
+Purpose: Messy, overlapping complaints with no committed diagnosis.
+Tests whether the note invents a single disease and whether ICD lookup
+stays unmatched or over-assigns.
+Source: written mock dialogue for macOS TTS (Samantha + Fred).
+Do not treat names, ages, meds, or vitals as real clinical records.
+
+---
+
+PROVIDER: What brings you in?
+
+PATIENT: I don't even know where to start. My head's been weird, like pressure, maybe three days, or wait, maybe since the weekend. I didn't sleep. I drank a lot of coffee. My cousin had a stroke last month so now I keep checking my blood pressure on the grocery store cuff and I can't remember the numbers. Also this cough, but it's probably allergies. Or a cold. I was around my sister's kids. They weren't sick. I don't think. Were they?
+
+PROVIDER: Let's slow down. Chest pain?
+
+PATIENT: No. Well, sometimes when I think about the stroke I get this tightness, then it goes away. I don't know if that's pain. I googled T I A.
+
+PROVIDER: Fever? Shortness of breath at rest?
+
+PATIENT: I don't think I had a fever. I didn't take my temperature. Breath is fine except when I talk too fast, like now. The cough is dry. Or maybe a little tickle. I took a leftover antibiotic from last year for two days then stopped because I read that's bad.
+
+PROVIDER: I need you to stop leftover antibiotics. I'm not diagnosing a sinus infection or a stroke today from this story. Your blood pressure here is one thirty two over eighty four. Pulse ninety, you seem anxious. Lungs are quiet, no wheeze that I hear. You're speaking in full sentences.
+
+PATIENT: So I'm fine? Or I need a scan? My cousin's doctor did a scan.
+
+PROVIDER: I am not ordering a brain scan today. I don't have a single diagnosis I'm willing to put down from this visit. It could be poor sleep, caffeine, worry, a mild viral cough, or more than one of those. I want you to stop the leftover antibiotic, cut the extra coffee, and come back tomorrow if you get one-sided weakness, trouble speaking, a thunderclap headache, or chest pain that doesn't stop.
+
+PATIENT: That's not really an answer.
+
+PROVIDER: It's the honest one. Follow up next week if the cough and the pressure headache are still there, or sooner if those warning signs show up. Any other questions?
+
+PATIENT: I guess not.

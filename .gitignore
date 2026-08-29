@@ -50,12 +50,16 @@ desktop-app/dist/
 desktop-app/src-tauri/target/
 desktop-app/src-tauri/gen/
 
-# Synthetic / recorded audio — keep the .txt scripts
+# Synthetic / recorded audio — keep the .txt scripts.
+# english_speech_sample.wav is a short synthetic fixture required by ASR tests.
 audio_samples/*.wav
+!audio_samples/english_speech_sample.wav
 
-# OS / editor
+# OS / editor / local agent
 .DS_Store
 .idea/
 .vscode/
+.cursor/
 *.swp
 *~
+*.canvas.tsx

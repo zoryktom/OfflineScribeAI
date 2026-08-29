@@ -123,6 +123,7 @@ def test_ollama_path_sends_transcript_and_segments(ollama_mode, monkeypatch):
     assert "0.0-2.4s" in prompt
     assert body["format"] == "json"
     assert body["stream"] is False
+    assert body["options"]["temperature"] == 0.2
     assert "Do not emit ICD-10 codes" in body["system"]
 
 
