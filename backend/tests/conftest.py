@@ -11,8 +11,12 @@ os.environ["LOCAL_API_KEY"] = "pytest-local-api-key"
 os.environ["ALLOW_DEV_DEFAULTS"] = "true"
 os.environ["VISIT_RETENTION_DAYS"] = "0"
 os.environ["HOST"] = "127.0.0.1"
+os.environ["DEMO_MODE"] = "false"
 os.environ["SQLITE_PATH"] = str(
     Path(tempfile.mkdtemp(prefix="offline-scribe-pytest-")) / "visits.db"
+)
+os.environ["DEMO_SQLITE_PATH"] = str(
+    Path(tempfile.mkdtemp(prefix="offline-scribe-demo-pytest-")) / "demo.db"
 )
 
 import pytest
@@ -20,6 +24,13 @@ import pytest
 from app.config import clear_settings_cache
 
 clear_settings_cache()
+
+
+@pytest.fixture(autouse=True)
+def _reset_settings_cache():
+    clear_settings_cache()
+    yield
+    clear_settings_cache()
 
 
 def pytest_configure(config):

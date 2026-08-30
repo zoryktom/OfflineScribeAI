@@ -110,6 +110,7 @@ class Visit(BaseModel):
     fhir_encounter_id: str | None = None
     last_sync_error: str | None = None
     review_summary: str | None = None
+    watermark: str | None = None
 
     def has_fhir_chart_link(self) -> bool:
         return bool(self.fhir_patient_id and self.fhir_encounter_id)
@@ -125,10 +126,15 @@ class VisitUpdate(BaseModel):
     section_actions: list[ReviewAction] = Field(default_factory=list)
 
 
+class DemoEncounterRequest(BaseModel):
+    script: str = ""
+
+
 class HealthResponse(BaseModel):
     status: str
     stub_mode: bool
     ollama_model: str
+    demo_mode: bool = False
 
 
 class SyncVisitResult(BaseModel):

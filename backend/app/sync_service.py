@@ -23,6 +23,7 @@ from app.ehr.ehr_config import get_ehr_settings
 
 from app.ehr.fhir_client import FhirAuthError, FhirClient, FhirRequestError
 from app.ehr.fhir_mapper import FhirMappingError, visit_to_document_reference
+from app.demo import DEMO_SYNC_UNAVAILABLE, DemoError, refuse_if_demo_sync
 from app.models import SyncRunResult, SyncStatus, SyncVisitResult, Visit
 from app.storage_service import (
     init_db,
@@ -59,6 +60,7 @@ def sync_pending_visits(
     client: FhirClient | None = None,
 ) -> SyncRunResult:
     """Sync all pending visits. Safe to call from the API or a CLI."""
+    refuse_if_demo_sync()
     init_db(db_path)
     results: list[SyncVisitResult] = []
     fhir_client = client or FhirClient()
@@ -186,7 +188,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Build and print FHIR JSON locally. Does not send anything or need credentials.",
     )
     args = parser.parse_args(argv)
-    result = sync_pending_visits(dry_run=args.dry_run)
+    try:
+        result = sync_pending_visits(dry_run=args.dry_run)
+    except DemoError as exc:
+        print(str(exc) or DEMO_SYNC_UNAVAILABLE)
+        return 2
     if not result.results:
         print("No pending visits.")
     return 0

@@ -83,12 +83,14 @@ export type Visit = {
   fhir_encounter_id: string | null;
   last_sync_error: string | null;
   review_summary: string | null;
+  watermark?: string | null;
 };
 
 export type HealthResponse = {
   status: string;
   stub_mode: boolean;
   ollama_model: string;
+  demo_mode?: boolean;
 };
 
 export type SyncRunResult = {
@@ -156,6 +158,18 @@ export function updateVisitNote(
       section_actions: sectionActions,
     }),
   });
+}
+
+export function loadDemoEncounter(script: string): Promise<Visit> {
+  return request<Visit>("/demo/encounters", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ script }),
+  });
+}
+
+export function exportVisitText(id: string): Promise<{ text: string }> {
+  return request<{ text: string }>(`/visits/${id}/export`);
 }
 
 export function runSync(dryRun = true): Promise<SyncRunResult> {

@@ -3,8 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DRAFT_BANNER,
   createVisitFromAudio,
+  exportVisitText,
   getHealth,
   listVisits,
+  loadDemoEncounter,
   runSync,
   updateVisitNote,
   type HealthResponse,
@@ -12,11 +14,16 @@ import {
   type ReviewAction,
   type Visit,
 } from "./api/client";
+import { DemoLanding } from "./components/DemoLanding";
+import { DemoWalkthrough } from "./components/DemoWalkthrough";
+import { DEMO_WATERMARK, DemoWatermark } from "./components/DemoWatermark";
 import { NoteReview } from "./components/NoteReview";
 import { RecordOrUpload } from "./components/RecordOrUpload";
 import { SyncStatusBadge } from "./components/SyncStatusBadge";
 import { TranscriptView } from "./components/TranscriptView";
 import { VisitHistory } from "./components/VisitHistory";
+
+const WALKTHROUGH_SCRIPT = "synthetic_clinic_visit_dialogue.txt";
 
 export default function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -26,6 +33,11 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [walkthroughStep, setWalkthroughStep] = useState(0);
+  const [startedDemo, setStartedDemo] = useState(false);
+
+  const demoMode = health?.demo_mode === true;
+  const watermark = demoMode ? DEMO_WATERMARK : null;
 
   const refresh = useCallback(async () => {
     const [nextHealth, nextVisits] = await Promise.all([getHealth(), listVisits()]);
@@ -99,16 +111,58 @@ export default function App() {
     }
   }
 
+  async function handleStartDemo() {
+    setBusy(true);
+    setError(null);
+    try {
+      const visit = await loadDemoEncounter(WALKTHROUGH_SCRIPT);
+      const next = await refresh();
+      setSelected(next.find((item) => item.id === visit.id) ?? visit);
+      setStartedDemo(true);
+      setWalkthroughStep(0);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Could not load the fake visit. Confirm DEMO_MODE=true and the local server is running.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDemoExport() {
+    if (!selected) {
+      return;
+    }
+    try {
+      const payload = await exportVisitText(selected.id);
+      const blob = new Blob([payload.text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${selected.id}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not export the demo note.");
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
-        <p className="app-kicker">Rural clinic workstation</p>
-        <h1>Offline Scribe</h1>
-        <p className="app-lede">
-          Record a visit, review the SOAP note, and keep it on this computer until
-          you choose to sync.
+        <p className="app-kicker">
+          {demoMode ? "Synthetic demo only" : "Rural clinic workstation"}
         </p>
-        {health?.stub_mode ? (
+        <h1>Offline Scribe</h1>
+        {demoMode ? <DemoWatermark /> : null}
+        <p className="app-lede">
+          {demoMode
+            ? "A locked-down look at how a draft note is produced from a fake conversation."
+            : "Record a visit, review the SOAP note, and keep it on this computer until you choose to sync."}
+        </p>
+        {health?.stub_mode && !demoMode ? (
           <p className="stub-note">
             STUB_MODE is on: SOAP notes are canned sample text so the app can
             run without Ollama. Transcription still uses on-device faster-whisper.
@@ -124,20 +178,48 @@ export default function App() {
       ) : null}
       {message ? <p className="banner">{message}</p> : null}
 
-      <RecordOrUpload busy={busy} onSubmit={handleUpload} />
+      {demoMode && !startedDemo ? (
+        <DemoLanding onStart={() => void handleStartDemo()} starting={busy} />
+      ) : null}
 
-      {selected ? (
+      {demoMode && startedDemo ? (
+        <DemoWalkthrough
+          step={walkthroughStep}
+          onNext={() => setWalkthroughStep((value) => Math.min(3, value + 1))}
+        />
+      ) : null}
+
+      {!demoMode ? <RecordOrUpload busy={busy} onSubmit={handleUpload} /> : null}
+
+      {selected && (!demoMode || startedDemo) ? (
         <>
           <div className="panel">
             <p className="section-label">This visit</p>
-            <SyncStatusBadge
-              status={selected.sync_status}
-              lastSyncError={selected.last_sync_error}
-              fhirPatientId={selected.fhir_patient_id}
-              fhirEncounterId={selected.fhir_encounter_id}
-            />
+            {watermark ? <DemoWatermark /> : null}
+            <p className="caption">{selected.id}</p>
+            {!demoMode ? (
+              <SyncStatusBadge
+                status={selected.sync_status}
+                lastSyncError={selected.last_sync_error}
+                fhirPatientId={selected.fhir_patient_id}
+                fhirEncounterId={selected.fhir_encounter_id}
+              />
+            ) : (
+              <p className="caption">Chart sync is unavailable in demo mode.</p>
+            )}
             {selected.review_summary ? (
               <p className="caption review-summary">{selected.review_summary}</p>
+            ) : null}
+            {demoMode ? (
+              <div className="row" style={{ marginTop: "0.85rem" }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => void handleDemoExport()}
+                >
+                  Download watermarked demo note
+                </button>
+              </div>
             ) : null}
           </div>
           <p className="draft-banner" role="status">
@@ -147,28 +229,38 @@ export default function App() {
             transcript={selected.transcript}
             segments={selected.transcript_segments ?? []}
             asrFlags={selected.asr_flags ?? []}
+            watermark={selected.watermark ?? watermark}
           />
           <NoteReview
             key={selected.id + (selected.provider_review?.reviewed_at ?? "draft")}
             note={selected.note}
             saving={saving}
             onSave={handleSave}
+            watermark={selected.watermark ?? watermark}
           />
         </>
       ) : null}
 
-      <VisitHistory
-        visits={visits}
-        selectedId={selected?.id ?? null}
-        onSelect={setSelected}
-      />
+      {!demoMode || startedDemo ? (
+        <VisitHistory
+          visits={visits}
+          selectedId={selected?.id ?? null}
+          onSelect={setSelected}
+        />
+      ) : null}
 
-      <p className="caption">
-        EHR sync is opt-in.{" "}
-        <button type="button" className="btn btn-secondary" onClick={() => void handleDryRun()}>
-          Preview FHIR JSON (dry-run)
-        </button>
-      </p>
+      {demoMode ? (
+        <p className="caption">
+          Chart preview and FHIR dry-run are unavailable in demo mode.
+        </p>
+      ) : (
+        <p className="caption">
+          EHR sync is opt-in.{" "}
+          <button type="button" className="btn btn-secondary" onClick={() => void handleDryRun()}>
+            Preview FHIR JSON (dry-run)
+          </button>
+        </p>
+      )}
     </div>
   );
 }

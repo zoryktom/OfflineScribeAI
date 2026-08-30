@@ -20,10 +20,20 @@ from app.asr_service import (
 from app.auth import require_local_api_key
 from app.config import get_settings
 from app.models import (
+    DemoEncounterRequest,
     HealthResponse,
     SyncRunResult,
     Visit,
     VisitUpdate,
+)
+from app.demo import (
+    DEMO_UPLOAD_REFUSED,
+    DemoError,
+    export_visit_text,
+    list_demo_scripts,
+    load_demo_encounter,
+    refuse_if_demo_upload,
+    seed_walkthrough_visit,
 )
 from app.note_service import NoteGenerationError, generate_note
 from app.startup_checks import StartupError, run_startup_checks
@@ -54,6 +64,8 @@ async def lifespan(_app: FastAPI):
     init_db()
     purge_expired_visits()
     settings = get_settings()
+    if settings.demo_mode:
+        seed_walkthrough_visit()
     if settings.asr_preload:
         load_whisper_model()
     yield
@@ -85,11 +97,16 @@ def health() -> HealthResponse:
         status="ok",
         stub_mode=settings.stub_mode,
         ollama_model=settings.ollama_model,
+        demo_mode=settings.demo_mode,
     )
 
 
 @app.post("/visits", response_model=Visit, dependencies=[Depends(require_local_api_key)])
 async def create_visit_from_audio(audio: UploadFile = File(...)) -> Visit:
+    try:
+        refuse_if_demo_upload()
+    except DemoError as exc:
+        raise HTTPException(status_code=403, detail=str(exc) or DEMO_UPLOAD_REFUSED) from exc
     settings = get_settings()
     upload_path: Path | None = None
     converted_path: Path | None = None
@@ -200,7 +217,39 @@ def patch_visit(visit_id: str, update: VisitUpdate) -> Visit:
     return visit
 
 
+@app.get("/demo/scripts", dependencies=[Depends(require_local_api_key)])
+def get_demo_scripts() -> list[dict[str, str]]:
+    try:
+        return list_demo_scripts()
+    except DemoError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.post("/demo/encounters", response_model=Visit, dependencies=[Depends(require_local_api_key)])
+def create_demo_encounter(payload: DemoEncounterRequest) -> Visit:
+    script = payload.script
+    try:
+        visit = load_demo_encounter(script)
+    except DemoError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except NoteGenerationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    logger.info("demo_encounter visit_id=%s", visit.id)
+    return visit
+
+
+@app.get("/visits/{visit_id}/export", dependencies=[Depends(require_local_api_key)])
+def export_visit(visit_id: str) -> dict[str, str]:
+    visit = get_visit(visit_id)
+    if visit is None:
+        raise HTTPException(status_code=404, detail="Visit not found on this computer.")
+    return {"text": export_visit_text(visit)}
+
+
 @app.post("/sync", response_model=SyncRunResult, dependencies=[Depends(require_local_api_key)])
 def run_sync(dry_run: bool = False) -> SyncRunResult:
     logger.info("sync requested dry_run=%s", dry_run)
-    return sync_pending_visits(dry_run=dry_run)
+    try:
+        return sync_pending_visits(dry_run=dry_run)
+    except DemoError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc

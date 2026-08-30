@@ -33,6 +33,8 @@ def visit_to_document_reference(visit: Visit) -> dict[str, Any]:
     created = visit.timestamp
     period_end = created + timedelta(minutes=30)
     note_text = format_note_as_plain_text(visit.note)
+    if visit.watermark:
+        note_text = f"{visit.watermark}\n\n{note_text}"
     encoded = base64.b64encode(note_text.encode("utf-8")).decode("ascii")
 
     resource: dict[str, Any] = {

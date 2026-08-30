@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS visits (
     fhir_patient_id TEXT,
     fhir_encounter_id TEXT,
     last_sync_error TEXT,
-    review_summary TEXT
+    review_summary TEXT,
+    watermark TEXT
 );
 """
 
@@ -70,8 +71,27 @@ class StorageError(Exception):
     """Raised when a visit cannot be read or written. Message is safe to show a clinician."""
 
 
+def _default_db_path() -> Path:
+    return get_settings().active_sqlite_path
+
+
+def _assert_storage_isolation(path: Path, demo_mode: bool) -> None:
+    settings = get_settings()
+    resolved = path.resolve()
+    real_path = settings.sqlite_path.resolve()
+    demo_path = settings.demo_sqlite_path.resolve()
+    if demo_mode and resolved == real_path:
+        raise StorageError(
+            "Demo visits cannot be written to the non-demo database."
+        )
+    if not demo_mode and resolved == demo_path:
+        raise StorageError(
+            "Non-demo visits cannot be written to the demo database."
+        )
+
+
 def init_db(db_path: Path | None = None) -> Path:
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     with _connect(path) as connection:
         connection.execute(_CREATE_VISITS)
@@ -93,8 +113,20 @@ def create_visit(
     db_path: Path | None = None,
 ) -> Visit:
     """Persist a visit. Chart ids stay None unless the caller sets them explicitly."""
+    settings = get_settings()
+    path = db_path or _default_db_path()
+    _assert_storage_isolation(path, settings.demo_mode)
+    visit_id = f"DEMO-{uuid4()}" if settings.demo_mode else str(uuid4())
+    if settings.demo_mode:
+        from app.demo import DEMO_WATERMARK
+
+        watermark = DEMO_WATERMARK
+    else:
+        watermark = None
+        if visit_id.startswith("DEMO-"):
+            raise StorageError("Non-demo visits cannot use a DEMO- id.")
     visit = Visit(
-        id=str(uuid4()),
+        id=visit_id,
         timestamp=datetime.now(timezone.utc),
         transcript=transcript,
         transcript_segments=list(transcript_segments or []),
@@ -107,8 +139,8 @@ def create_visit(
         fhir_encounter_id=fhir_encounter_id,
         last_sync_error=None,
         review_summary=None,
+        watermark=watermark,
     )
-    path = db_path or get_settings().sqlite_path
     try:
         with _connect(path) as connection:
             connection.execute(
@@ -116,8 +148,9 @@ def create_visit(
                 INSERT INTO visits (
                     id, timestamp, transcript, transcript_segments, note_json, sync_status,
                     fhir_resource_id, reviewer_id, reviewed_at, asr_flags,
-                    fhir_patient_id, fhir_encounter_id, last_sync_error, review_summary
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    fhir_patient_id, fhir_encounter_id, last_sync_error, review_summary,
+                    watermark
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 _visit_row(visit),
             )
@@ -131,7 +164,7 @@ def create_visit(
 
 
 def get_visit(visit_id: str, db_path: Path | None = None) -> Visit | None:
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         row = connection.execute(
             "SELECT * FROM visits WHERE id = ?", (visit_id,)
@@ -140,7 +173,7 @@ def get_visit(visit_id: str, db_path: Path | None = None) -> Visit | None:
 
 
 def list_visits(db_path: Path | None = None) -> list[Visit]:
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         rows = connection.execute(
             "SELECT * FROM visits ORDER BY timestamp DESC"
@@ -149,7 +182,7 @@ def list_visits(db_path: Path | None = None) -> list[Visit]:
 
 
 def list_pending_visits(db_path: Path | None = None) -> list[Visit]:
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         rows = connection.execute(
             "SELECT * FROM visits WHERE sync_status = ? ORDER BY timestamp ASC",
@@ -173,7 +206,7 @@ def update_visit_note(
             "Enter the reviewing provider's id and try again."
         )
     reviewed_at = datetime.now(timezone.utc)
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     previous = get_visit(visit_id, db_path=path)
     if previous is None:
         return None
@@ -223,7 +256,7 @@ def update_visit_note(
 
 
 def list_review_audit(visit_id: str, db_path: Path | None = None) -> list[dict[str, object]]:
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         rows = connection.execute(
             """
@@ -252,7 +285,7 @@ def purge_expired_visits(
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
     cutoff = (moment - timedelta(days=days)).isoformat()
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         expired = connection.execute(
             "SELECT id FROM visits WHERE timestamp < ?",
@@ -281,7 +314,7 @@ def mark_synced(
     fhir_resource_id: str,
     db_path: Path | None = None,
 ) -> Visit | None:
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         connection.execute(
             """
@@ -301,7 +334,7 @@ def mark_sync_failed(
     db_path: Path | None = None,
 ) -> Visit | None:
     """Record a sync failure but leave the visit pending so it can be retried."""
-    path = db_path or get_settings().sqlite_path
+    path = db_path or _default_db_path()
     with _connect(path) as connection:
         connection.execute(
             """
@@ -358,6 +391,7 @@ def _ensure_visit_columns(connection: sqlcipher.Connection) -> None:
         "reviewed_at": "TEXT",
         "asr_flags": "TEXT NOT NULL DEFAULT '[]'",
         "review_summary": "TEXT",
+        "watermark": "TEXT",
     }
     for column, spec in additions.items():
         if column not in names:
@@ -586,6 +620,7 @@ def _visit_row(visit: Visit) -> tuple:
         visit.fhir_encounter_id,
         visit.last_sync_error,
         visit.review_summary,
+        visit.watermark,
     )
 
 
@@ -604,4 +639,5 @@ def _row_to_visit(row: sqlcipher.Row) -> Visit:
         fhir_encounter_id=row["fhir_encounter_id"],
         last_sync_error=row["last_sync_error"],
         review_summary=row["review_summary"] if "review_summary" in row.keys() else None,
+        watermark=row["watermark"] if "watermark" in row.keys() else None,
     )

@@ -21,6 +21,7 @@ The API binds to `127.0.0.1` only. Visit audio and notes are not sent to a cloud
 - [Failure-mode analysis](#failure-mode-analysis)
 - [Iterative development](#iterative-development)
 - [Reproducibility](#reproducibility)
+- [Demo Mode](#demo-mode)
 - [Limitations](#limitations)
 - [Current state](#current-state)
 - [Safety / privacy](#safety--privacy)
@@ -361,6 +362,25 @@ Observed sequence:
 6. Three more scripts: wipe / wrong citations / paraphrase misses
 7. Grounding filters + never-wipe + tests (still overlap matching)
 8. Temperature 0.2: less Assessment drift, ICD still unstable, new negation miss
+
+---
+
+## Demo Mode
+
+`DEMO_MODE=true` is a **permanently limited** explorer for a non-engineer. It is safe to walk through with a non-technical person on **synthetic scripts only**. It has no upload path for new audio, no FHIR dry-run or chart write, and it stores demo visits in a separate SQLCipher file with `DEMO-` ids and a non-removable watermark:
+
+`SYNTHETIC DEMO — NOT A REAL PATIENT — NOT FOR CLINICAL USE`
+
+This is **not** a step toward clinical use. The measured miss and false-alarm numbers are unchanged. Turning demo mode on does not make drafts accurate enough for real patients or real workflows.
+
+```bash
+# backend/.env
+DEMO_MODE=true
+STUB_MODE=true
+ALLOW_DEV_DEFAULTS=true
+```
+
+Then start the API and desktop app as usual. The landing screen states the limit in plain language and shows the planted-error numbers (6 of 8 planted errors missed; 3 of 4 caution-flag false alarms) before any note is shown.
 
 ---
 

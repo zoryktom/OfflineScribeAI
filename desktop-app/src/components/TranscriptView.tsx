@@ -1,9 +1,11 @@
 import type { AsrFlag } from "../api/client";
+import { DemoWatermark } from "./DemoWatermark";
 
 type Props = {
   transcript: string;
   segments?: TranscriptSegment[];
   asrFlags?: AsrFlag[];
+  watermark?: string | null;
 };
 
 export type TranscriptSegment = {
@@ -24,11 +26,17 @@ function overlaps(flag: AsrFlag, start: number, end: number): boolean {
   return flag.end_s >= start && flag.start_s <= end;
 }
 
-export function TranscriptView({ transcript, segments = [], asrFlags = [] }: Props) {
+export function TranscriptView({
+  transcript,
+  segments = [],
+  asrFlags = [],
+  watermark = null,
+}: Props) {
   const hasSegments = segments.length > 0;
 
   return (
     <section className="panel" aria-labelledby="transcript-heading">
+      {watermark ? <DemoWatermark /> : null}
       <p className="section-label">Transcript</p>
       <h2 id="transcript-heading">What was said</h2>
       <p className="caption" style={{ marginBottom: "1rem" }}>

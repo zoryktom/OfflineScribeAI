@@ -52,8 +52,15 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1:8b"
     ollama_timeout_seconds: float = 120.0
 
-    # Encrypted local visit database.
+    # Encrypted local visit database. Demo mode uses a different file.
     sqlite_path: Path = _BACKEND_DIR / "data" / "offline_scribe.db"
+    demo_sqlite_path: Path = _BACKEND_DIR / "data" / "offline_scribe_demo.db"
+
+    # Permanently limited synthetic explorer. Default off. Not a real-visit path.
+    demo_mode: bool = Field(
+        default=False,
+        description="When true, only preloaded synthetic encounters can be loaded.",
+    )
 
     # SQLCipher passphrase. Never hardcode. Empty key refuses to open the DB.
     sqlcipher_key: str = ""
@@ -70,6 +77,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def active_sqlite_path(self) -> Path:
+        return self.demo_sqlite_path if self.demo_mode else self.sqlite_path
 
 
 @lru_cache

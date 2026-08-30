@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import type { GroundedSection, Note, ReviewAction, VerificationNeed } from "../api/client";
 import { DRAFT_BANNER } from "../api/client";
+import { DemoWatermark } from "./DemoWatermark";
 
 export const NEGATION_CHECK_REASON = "negation_or_question";
 export const NEGATION_CHECK_LABEL =
@@ -135,9 +136,10 @@ type Props = {
   note: Note;
   saving: boolean;
   onSave: (note: Note, reviewerId: string, actions: ReviewAction[]) => Promise<void>;
+  watermark?: string | null;
 };
 
-export function NoteReview({ note, saving, onSave }: Props) {
+export function NoteReview({ note, saving, onSave, watermark = null }: Props) {
   const [draft, setDraft] = useState<Note>(note);
   const [step, setStep] = useState(0);
   const [reviewerId, setReviewerId] = useState("");
@@ -184,6 +186,7 @@ export function NoteReview({ note, saving, onSave }: Props) {
 
   return (
     <section className="panel" aria-labelledby="note-heading">
+      {watermark ? <DemoWatermark /> : null}
       <p className="draft-banner" role="status">
         {DRAFT_BANNER}
       </p>
