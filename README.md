@@ -22,6 +22,7 @@ The API binds to `127.0.0.1` only. Visit audio and notes are not sent to a cloud
 - [Iterative development](#iterative-development)
 - [Reproducibility](#reproducibility)
 - [Limitations](#limitations)
+- [Current state](#current-state)
 - [Safety / privacy](#safety--privacy)
 - [What I learned](#what-i-learned)
 - [Future work](#future-work)
@@ -41,7 +42,7 @@ That question pushed the work away from a single generate-and-trust demo and tow
 - **Source grounding** — attach timestamped transcript spans to SOAP sections, or mark the section when a link is not confident
 - **Hallucination checks** — prompt constraints plus regression tests for a known fabricated claim (“well controlled” on medications that were never described that way)
 - **Reference-based coding** — the model names a diagnosis in plain language; a local CMS-derived starter file supplies codes, or returns unmatched
-- **Human review** — the UI is a review/edit loop; sync is skipped until a provider flag is set and FHIR chart ids exist
+- **Human review** — the UI is a review/edit loop; sync is skipped until a named provider id + timestamp is recorded and FHIR chart ids exist
 - **Failure-mode analysis** — grounding wipes, wrong citations, ASR error propagation, negation errors, ICD instability, run-to-run variance
 - **Reproducibility** — pinned Python 3.12, `.env.example`, pytest with Ollama mocked, documented hardware-specific timings that are *not* treated as general performance
 
@@ -79,9 +80,12 @@ backend/app/
   note_service.py     Transcript → SOAP (Ollama or stub)
   prompts.py          SOAP system/user prompts
   grounding.py        Section text ↔ transcript spans
+  negation_check.py   Flag (do not rewrite) question/denial-as-assertion
+  asr_flags.py        Flag low-confidence / odd medication-like ASR tokens
   icd10_lookup.py     Phrase → starter-set code or UNMATCHED
   data/icd10_starter.json
-  storage_service.py  SQLCipher visits
+  startup_checks.py   Loopback bind + required secrets + leftover-dev flags
+  storage_service.py  SQLCipher visits + review audit + retention purge
   sync_service.py     Dry-run / skipped live POST
   ehr/                FHIR map + disabled client + RPMS stub
 desktop-app/          React + Vite UI; optional Tauri shell
@@ -146,7 +150,7 @@ ICD codes in the model JSON are **ignored**. Codes come only from lookup.
 
 A `Note` has SOAP strings plus `suggested_icd10`, `follow_up`, and per-section `GroundedSection` metadata. Empty discussion is supposed to be `"Not documented in visit"`.
 
-The UI (`NoteReview.tsx`) lets a reviewer edit SOAP text, accept/reject suggested codes, and save. Saving sets `edited_by_provider`. Sync skips unreviewed visits.
+The UI (`NoteReview.tsx`) lets a reviewer edit SOAP text, accept/reject suggested codes, and save. Saving requires a named `reviewer_id` and writes `provider_review` (id + timestamp). A boolean “reviewed” flag is not accepted. Sync and FHIR dry-run skip visits without that attestation. Suggested ICD-10 codes stay unaccepted and are labeled “AI-suggested, unverified” until a person accepts them.
 
 ### Source grounding
 
@@ -210,13 +214,13 @@ Included:
 - Logging checks that transcript/note bodies are not logged
 - Single-machine latency (not a benchmark)
 
-Not included: real patients, multi-site tests, blinded clinician scoring, full ICD-10-CM, GPU numbers, or a committed eval script.
+Not included: real patients, multi-site tests, blinded clinician scoring, full ICD-10-CM, or GPU numbers. A planted-error harness is committed (`make eval`); it is a blind-spot measurement, not a labeled clinical eval.
 
 ---
 
 ## Results
 
-**pytest** (this checkout, `backend/`): **47 passed, 1 skipped**, unless the command in [Reproducibility](#reproducibility) says otherwise. The skip is `test_live_ollama_returns_structured_note` unless `RUN_OLLAMA_LIVE=1` and the configured model is pulled.
+**pytest** (this checkout, `backend/`): **65 passed, 1 skipped** in the main suite (`pytest`, eval marker excluded). The skip is `test_live_ollama_returns_structured_note` unless `RUN_OLLAMA_LIVE=1`. Planted-error harness: `pytest -m eval -o addopts=` (**1 passed**). Frontend review-gate tests: `cd desktop-app && npm test` (**4 passed**).
 
 ### Successful results
 
@@ -298,17 +302,17 @@ Only issues that were actually observed.
 
 **Why it mattered?** Downstream NLP cannot recover a medication name the ASR never produced.
 
-**What changed?** Nothing in the ASR model default (`small.en` kept). Notes are reviewed against the transcript.
+**What changed?** Still `small.en`. After ASR, unusual medication-like tokens (near a small starter drug list, plus known garbles such as “liz”) and low-confidence near-drug words are flagged on the transcript for review. The transcript and note are not rewritten.
 
-**Resolved?** No. Known limitation.
+**Resolved?** No. Flagging is heuristic. Wrong drug names can still appear in the draft. Known limitation.
 
 ### 7. Negation / question-as-assertion
 
 **What happened?** Ambiguous visit, temperature 0.2, run 2: Subjective claimed fever and SOB at rest. The transcript treats those as questions the patient did not confirm.
 
-**What changed?** Not addressed in code in this version.
+**What changed?** The system prompt now says never to assert a symptom that was only asked, denied, or left unconfirmed. After generation, `negation_check.py` flags (does not rewrite) assertive symptom sentences when every source mention is a question and/or negation. The UI marks those SOAP sections “Needs verification.”
 
-**Resolved?** No.
+**Resolved?** No. This is keyword heuristics, not NLI. Misses and false flags remain possible. The model can still write the bad sentence; a person has to catch it.
 
 ### 8. ICD-10 run-to-run instability (including a wrong-body-part code)
 
@@ -316,9 +320,9 @@ Only issues that were actually observed.
 
 **Why it mattered?** Coding is a separate failure from prose. Lookup will faithfully map a bad `likely_diagnoses` phrase.
 
-**What changed?** Temperature 0.2. No change to `icd10_lookup.py` in that pass.
+**What changed?** Temperature 0.2. Lookup is now deterministic for an identical phrase list (cached best-match, stable tie-break on code string, output sorted by code). Suggested codes always leave `accepted` unset. The UI labels them “AI-suggested, unverified.”
 
-**Resolved?** **No.** Wording variance dropped somewhat; codes did not stabilize. Determinism is **not** claimed.
+**Resolved?** **No.** The **phrases** the model emits still vary, so the same transcript can still map to different codes across runs. Deterministic lookup is not a deterministic note. Determinism of the full pipeline is **not** claimed.
 
 ### 9. Latency
 
@@ -380,7 +384,9 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Set SQLCIPHER_KEY and LOCAL_API_KEY (any local secrets; do not commit .env)
+# Set unique SQLCIPHER_KEY and LOCAL_API_KEY (not empty, not example placeholders)
+# Example values such as local-dev-only-* fail startup. Do not commit .env
+# A supervised pilot should keep ALLOW_DEV_DEFAULTS unset/false and STUB_MODE=false
 uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -415,7 +421,15 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Record (WebM, needs ffmpeg 
 ```bash
 cd backend
 source .venv/bin/activate
-pytest
+pytest          # main suite; skips @pytest.mark.eval
+make eval       # from repo root: planted-error harness + pytest -m eval
+```
+
+Frontend review-gate tests:
+
+```bash
+cd desktop-app
+npm test
 ```
 
 Ollama is mocked. Opt-in live call:
@@ -442,17 +456,62 @@ Copy `backend/.env.example` and `desktop-app/.env.example` only. Real `.env` fil
 
 ## Limitations
 
+These caveats are unchanged in force. Hardening below **flags and blocks**, it does not make drafts trustworthy.
+
 - **Synthetic evaluation**, four scripts, mostly one machine, often `llama3:8b` instead of the config default
-- **No clinical validation**, no real PHI, no claim of diagnostic or coding accuracy
-- **ASR** errors are common on clinical terms and propagate
+- **No clinical validation**, no real PHI, no claim of diagnostic or coding accuracy. This is not FDA-cleared and is not a diagnosis or coding system.
+- **ASR** errors are common on clinical terms and still propagate into the draft. Unusual medication-like tokens and some low-confidence words are now **highlighted for review**; they are not corrected.
 - **No diarization**
 - **Grounding** is overlap heuristics, not semantic entailment
-- **Negation** is not handled
-- **ICD-10** is a 42-code starter list + fuzzy match; `likely_diagnoses` can map to the wrong body system
+- **Negation / question-as-assertion** is not solved. The prompt forbids asserting unconfirmed symptoms; a **heuristic post-check flags** some assertive sentences for “Needs verification.” It does not rewrite the note and is not NLI.
+- **ICD-10** is a 42-code starter list + fuzzy match; `likely_diagnoses` can still map to the wrong body system. Lookup is deterministic **for an identical phrase list**; the model’s phrases are not. Codes stay unaccepted and labeled “AI-suggested, unverified.”
 - **LLM output is not deterministic** at temperature 0.2
 - **Latency** on CPU 8B models is minutes per note on the hardware used here
 - **Live EHR write is off**; RPMS is unimplemented
+- **Named review is required** (`reviewer_id` + timestamp) before sync/export. A boolean is not enough. This is a process gate, not clinical sign-off.
+- **Retention purge** (`VISIT_RETENTION_DAYS`, default off) can delete old local visits. It is not a records-management program.
+- **Startup refuses** non-loopback bind, missing/example `SQLCIPHER_KEY` / `LOCAL_API_KEY`, and leftover `STUB_MODE=true` unless `ALLOW_DEV_DEFAULTS=true`
 - **Git history is not a lab notebook**; it was not rewritten to look older
+
+**Still unresolved (same class of failures as evaluation):** fluent fabrication, wrong grounding citations, ASR drug-name substitutions entering SOAP, negation misses, ICD phrase drift, no clinician-scored accuracy, no HIPAA certification.
+
+### Measured coverage
+
+These numbers are from the planted-error harness (`make eval` / `python -m app.eval_harness`) on **8 planted** synthetic fixtures (errors the current checks should catch) and **4 benign** fixtures (differential / safety-net language they should not flag). They are a blind-spot measurement, not validation. The lexicons were not tuned to improve these numbers.
+
+| Mechanism | Catch rate (planted) | False positives (benign) |
+| --- | --- | --- |
+| `negation_check` (denied rash / photophobia / palpitations vs differential / “call back if X” language) | **0/3** | **3/4** |
+| `asr_flags` (warfaren / levothyroxeen / gabapentn) | **0/3** | **0/0** (no benign ASR fixtures) |
+| Grounding (family-history miscite + dyspnea paraphrase) | **2/2** | **0/0** (no benign grounding fixtures) |
+
+**Overall: 2/8 planted errors caught, 3/4 false positives on benign fixtures.**
+
+| Failure type | Caught | False positives | Notes |
+| --- | --- | --- | --- |
+| Denied/questioned symptom outside `negation_check.py` | **0/3** | — | Probe notes asserted rash, photophobia, or palpitations; no flag. |
+| Garbled drug name outside `medication_starter.txt` and the known-garble map | **0/3** | — | `asr_flags` did not flag warfaren, levothyroxeen, or gabapentn. |
+| Family-history statement that could be miscited to Assessment | **1/1** | — | Grounding did not attach the mother’s stroke span to a probe Assessment about acute stroke. |
+| Paraphrase of a real symptom (“can’t catch my breath” vs “shortness of breath”) | **1/1** | — | Overlap matching linked the paraphrase on this fixture. |
+| Benign differential (mild viral cough; “rather than shortness of breath”) | — | **2/2** | Same class of language that spuriously fired on the live ambiguous visit. |
+| Benign safety-net (“return if fever…”; “chest pain that does not stop”) | — | **1/2** | Fever plan line flagged; chest-pain safety-net did not on this wording. |
+
+Live `generate_note()` on **written** encounter scripts (`llama3:8b`, four scripts × 2): `verification_needs` fired on the ambiguous visit only (**2** then **1** flags). Those flags were on a “mild viral cough” differential and a plan warning that mentioned chest pain — **spurious** relative to the historical fever/SOB assertion. `asr_flags` was **0/8** on correctly spelled script text.
+
+Live ASR on a **slurred-medication TTS clip** (`faster-whisper` `small.en`, `STUB_MODE=false`, two full pipeline runs): intended names were lisinopril and atorvastatin. Whisper wrote **“Lazino Pril”** and **“Adorvastatin”**. `asr_flags` fired on **Adorvastatin** both times (`unusual_medication_token`) and did **not** fire on **Lazino Pril**. The SOAP Assessment copied both garbled strings. This is not the old hand-typed “liz” probe. Full tables: [docs/evaluation.md](docs/evaluation.md).
+
+```bash
+make eval
+# or
+cd backend && pytest -m eval -o addopts=
+cd backend && python -m app.eval_harness
+```
+
+---
+
+## Current state
+
+This tool is for **supervised drafting on synthetic or de-identified data only**. A named reviewer id is required before sync or export. It is **not** safe for unsupervised use, real patients, or treating `verification_needs` / `asr_flags` as complete. The measured catch rate is **2/8** planted errors and the negation heuristic produced **3/4** false positives on benign differential and safety-net fixtures. This is a supervised internal pilot on synthetic/de-identified data only.
 
 ---
 
@@ -464,6 +523,10 @@ Copy `backend/.env.example` and `desktop-app/.env.example` only. Real `.env` fil
 - The system is **not** HIPAA-certified by this repository and is **not** a covered clinical deployment guide.
 - Logging is written to avoid transcript/note bodies; that is a coding practice, not a compliance certification.
 - A local API key protects loopback routes from casual cross-site calls; it is not multi-user IAM.
+- Startup requires non-placeholder `SQLCIPHER_KEY` and `LOCAL_API_KEY` from the environment. Example values such as `local-dev-only-*` are refused.
+- The API process is refused if `HOST` / `--host` is not loopback.
+- Optional `VISIT_RETENTION_DAYS` can purge old local visits on startup. Default `0` means no automatic delete.
+- Review accept/reject/edit actions are stored in `review_audit` (visit id, reviewer id, section, action, time — not transcript or note text).
 
 If you run this on a machine that later holds real visits, treat the SQLCipher file as sensitive health data and never push it.
 
@@ -478,7 +541,7 @@ If you run this on a machine that later holds real visits, treat the SQLCipher f
 - **A small reference file is safer than trusting model-recalled codes**, and still unsafe if the input phrase is wrong.
 - **Regression tests matter** because prompt and grounding changes reintroduce old bugs (wipes, J40.0, fabrication).
 - **The useful write-up is often the failure**, not the demo screenshot.
-- **Human review is part of the architecture**, not an apology: `edited_by_provider`, skipped sync, accept/reject codes.
+- **Human review is part of the architecture**, not an apology: named `provider_review`, skipped sync, accept/reject codes, section audit rows.
 
 ---
 
@@ -487,8 +550,8 @@ If you run this on a machine that later holds real visits, treat the SQLCipher f
 These are **not implemented**:
 
 - Embedding or NLI-based grounding
-- Stronger medical ASR / recovery of drug names
-- Negation and question-scope handling
+- Stronger medical ASR / recovery of drug names (current flags do not correct tokens)
+- **NLI / entailment-quality negation** (and question-scope) — identified next step. The keyword heuristic caught **0/3** out-of-lexicon denied-symptom probes and produced **3/4** false positives on benign differential / safety-net fixtures, for an overall planted catch of **2/8**. An LLM-based negation classifier is a larger design change with its own eval plan; it was not added in this pass.
 - Constraining `likely_diagnoses` to phrases attested in Assessment (or dropping auto-codes)
 - Full ICD-10-CM and coder workflow
 - Larger labeled evaluation sets and inter-run statistics

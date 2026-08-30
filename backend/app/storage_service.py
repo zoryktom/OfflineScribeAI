@@ -5,15 +5,27 @@ Never log transcript or note content. Identifiers and sync_status only.
 
 from __future__ import annotations
 
+import hashlib
 import json
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
 from sqlcipher3 import dbapi2 as sqlcipher
 
 from app.config import get_settings
-from app.models import Note, SpeakerTurn, SyncStatus, Visit
+from app.models import (
+    AsrFlag,
+    Note,
+    ProviderAttestation,
+    ReviewAction,
+    SpeakerTurn,
+    SyncStatus,
+    Visit,
+)
+
+logger = logging.getLogger(__name__)
 
 _CREATE_VISITS = """
 CREATE TABLE IF NOT EXISTS visits (
@@ -24,12 +36,34 @@ CREATE TABLE IF NOT EXISTS visits (
     note_json TEXT NOT NULL,
     sync_status TEXT NOT NULL,
     fhir_resource_id TEXT,
-    edited_by_provider INTEGER NOT NULL DEFAULT 0,
+    reviewer_id TEXT,
+    reviewed_at TEXT,
+    asr_flags TEXT NOT NULL DEFAULT '[]',
     fhir_patient_id TEXT,
     fhir_encounter_id TEXT,
-    last_sync_error TEXT
+    last_sync_error TEXT,
+    review_summary TEXT
 );
 """
+
+_CREATE_AUDIT = """
+CREATE TABLE IF NOT EXISTS review_audit (
+    id TEXT PRIMARY KEY,
+    visit_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    section TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    text_changed INTEGER,
+    before_len INTEGER,
+    after_len INTEGER,
+    delta_chars INTEGER,
+    hash_before TEXT,
+    hash_after TEXT
+);
+"""
+
+_SOAP_SECTIONS = ("subjective", "objective", "assessment", "plan")
 
 
 class StorageError(Exception):
@@ -41,7 +75,9 @@ def init_db(db_path: Path | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with _connect(path) as connection:
         connection.execute(_CREATE_VISITS)
-        _ensure_transcript_segments_column(connection)
+        connection.execute(_CREATE_AUDIT)
+        _ensure_visit_columns(connection)
+        _ensure_audit_columns(connection)
         connection.commit()
     return path
 
@@ -51,6 +87,7 @@ def create_visit(
     note: Note,
     *,
     transcript_segments: list[SpeakerTurn] | None = None,
+    asr_flags: list[AsrFlag] | None = None,
     fhir_patient_id: str | None = None,
     fhir_encounter_id: str | None = None,
     db_path: Path | None = None,
@@ -64,10 +101,12 @@ def create_visit(
         note=note,
         sync_status=SyncStatus.pending,
         fhir_resource_id=None,
-        edited_by_provider=False,
+        provider_review=None,
+        asr_flags=list(asr_flags or []),
         fhir_patient_id=fhir_patient_id,
         fhir_encounter_id=fhir_encounter_id,
         last_sync_error=None,
+        review_summary=None,
     )
     path = db_path or get_settings().sqlite_path
     try:
@@ -76,9 +115,9 @@ def create_visit(
                 """
                 INSERT INTO visits (
                     id, timestamp, transcript, transcript_segments, note_json, sync_status,
-                    fhir_resource_id, edited_by_provider, fhir_patient_id,
-                    fhir_encounter_id, last_sync_error
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    fhir_resource_id, reviewer_id, reviewed_at, asr_flags,
+                    fhir_patient_id, fhir_encounter_id, last_sync_error, review_summary
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 _visit_row(visit),
             )
@@ -123,27 +162,118 @@ def update_visit_note(
     visit_id: str,
     note: Note,
     *,
-    edited_by_provider: bool = True,
+    reviewer_id: str,
+    section_actions: list[ReviewAction] | None = None,
     db_path: Path | None = None,
 ) -> Visit | None:
+    reviewer = (reviewer_id or "").strip()
+    if not reviewer:
+        raise StorageError(
+            "A reviewer id is required to confirm a note. "
+            "Enter the reviewing provider's id and try again."
+        )
+    reviewed_at = datetime.now(timezone.utc)
     path = db_path or get_settings().sqlite_path
+    previous = get_visit(visit_id, db_path=path)
+    if previous is None:
+        return None
+    summary = _build_review_summary(previous.note, note, reviewer, reviewed_at)
+    actions = list(section_actions or [ReviewAction(section="note", action="confirm")])
     with _connect(path) as connection:
         cursor = connection.execute(
             """
             UPDATE visits
-            SET note_json = ?, edited_by_provider = ?
+            SET note_json = ?, reviewer_id = ?, reviewed_at = ?, review_summary = ?
             WHERE id = ?
             """,
             (
                 note.model_dump_json(),
-                1 if edited_by_provider else 0,
+                reviewer,
+                reviewed_at.isoformat(),
+                summary,
                 visit_id,
             ),
         )
-        connection.commit()
         if cursor.rowcount == 0:
+            connection.commit()
             return None
+        _write_audit_rows(
+            connection,
+            visit_id=visit_id,
+            reviewer_id=reviewer,
+            actions=actions,
+            created_at=reviewed_at,
+        )
+        _write_section_diffs(
+            connection,
+            visit_id=visit_id,
+            reviewer_id=reviewer,
+            before=previous.note,
+            after=note,
+            created_at=reviewed_at,
+        )
+        connection.commit()
+    logger.info(
+        "review_saved visit_id=%s reviewer_id=%s action_count=%s",
+        visit_id,
+        reviewer,
+        len(actions),
+    )
     return get_visit(visit_id, db_path=path)
+
+
+def list_review_audit(visit_id: str, db_path: Path | None = None) -> list[dict[str, object]]:
+    path = db_path or get_settings().sqlite_path
+    with _connect(path) as connection:
+        rows = connection.execute(
+            """
+            SELECT visit_id, reviewer_id, action, section, created_at,
+                   text_changed, before_len, after_len, delta_chars,
+                   hash_before, hash_after
+            FROM review_audit
+            WHERE visit_id = ?
+            ORDER BY created_at ASC
+            """,
+            (visit_id,),
+        ).fetchall()
+    return [_audit_row_to_dict(row) for row in rows]
+
+
+def purge_expired_visits(
+    *,
+    now: datetime | None = None,
+    db_path: Path | None = None,
+) -> int:
+    """Delete visits older than visit_retention_days. Returns the number removed."""
+    days = get_settings().visit_retention_days
+    if days <= 0:
+        return 0
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    cutoff = (moment - timedelta(days=days)).isoformat()
+    path = db_path or get_settings().sqlite_path
+    with _connect(path) as connection:
+        expired = connection.execute(
+            "SELECT id FROM visits WHERE timestamp < ?",
+            (cutoff,),
+        ).fetchall()
+        expired_ids = [row["id"] for row in expired]
+        if expired_ids:
+            placeholders = ",".join("?" * len(expired_ids))
+            connection.execute(
+                f"DELETE FROM review_audit WHERE visit_id IN ({placeholders})",
+                expired_ids,
+            )
+        cursor = connection.execute(
+            "DELETE FROM visits WHERE timestamp < ?",
+            (cutoff,),
+        )
+        deleted = cursor.rowcount if cursor.rowcount is not None else 0
+        connection.commit()
+    if deleted:
+        logger.info("retention purged_count=%s retention_days=%s", deleted, days)
+    return deleted
 
 
 def mark_synced(
@@ -218,14 +348,170 @@ def _connect(path: Path) -> sqlcipher.Connection:
     return connection
 
 
-def _ensure_transcript_segments_column(connection: sqlcipher.Connection) -> None:
+def _ensure_visit_columns(connection: sqlcipher.Connection) -> None:
     names = {
         row[1] for row in connection.execute("PRAGMA table_info(visits)").fetchall()
     }
-    if "transcript_segments" not in names:
-        connection.execute(
-            "ALTER TABLE visits ADD COLUMN transcript_segments TEXT NOT NULL DEFAULT '[]'"
+    additions = {
+        "transcript_segments": "TEXT NOT NULL DEFAULT '[]'",
+        "reviewer_id": "TEXT",
+        "reviewed_at": "TEXT",
+        "asr_flags": "TEXT NOT NULL DEFAULT '[]'",
+        "review_summary": "TEXT",
+    }
+    for column, spec in additions.items():
+        if column not in names:
+            connection.execute(f"ALTER TABLE visits ADD COLUMN {column} {spec}")
+
+
+def _ensure_audit_columns(connection: sqlcipher.Connection) -> None:
+    names = {
+        row[1] for row in connection.execute("PRAGMA table_info(review_audit)").fetchall()
+    }
+    additions = {
+        "text_changed": "INTEGER",
+        "before_len": "INTEGER",
+        "after_len": "INTEGER",
+        "delta_chars": "INTEGER",
+        "hash_before": "TEXT",
+        "hash_after": "TEXT",
+    }
+    for column, spec in additions.items():
+        if column not in names:
+            connection.execute(f"ALTER TABLE review_audit ADD COLUMN {column} {spec}")
+
+
+def _content_hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+
+
+def _codes_fingerprint(note: Note) -> str:
+    parts = [f"{item.code}:{item.accepted}" for item in note.suggested_icd10]
+    return "|".join(parts)
+
+
+def _build_review_summary(
+    before: Note, after: Note, reviewer_id: str, reviewed_at: datetime
+) -> str:
+    soap_edited = sum(
+        1 for name in _SOAP_SECTIONS if getattr(before, name) != getattr(after, name)
+    )
+    icd_rejected = sum(1 for item in after.suggested_icd10 if item.accepted is False)
+    code_word = "code" if icd_rejected == 1 else "codes"
+    return (
+        f"{soap_edited} of {len(_SOAP_SECTIONS)} SOAP sections edited, "
+        f"{icd_rejected} ICD {code_word} rejected, "
+        f"reviewed by {reviewer_id} at {reviewed_at.isoformat()}"
+    )
+
+
+def _write_section_diffs(
+    connection: sqlcipher.Connection,
+    *,
+    visit_id: str,
+    reviewer_id: str,
+    before: Note,
+    after: Note,
+    created_at: datetime,
+) -> None:
+    for name in _SOAP_SECTIONS:
+        old_text = getattr(before, name) or ""
+        new_text = getattr(after, name) or ""
+        _insert_audit(
+            connection,
+            visit_id=visit_id,
+            reviewer_id=reviewer_id,
+            action="section_diff",
+            section=name,
+            created_at=created_at,
+            text_changed=old_text != new_text,
+            before_len=len(old_text),
+            after_len=len(new_text),
+            hash_before=_content_hash(old_text),
+            hash_after=_content_hash(new_text),
         )
+    old_codes = _codes_fingerprint(before)
+    new_codes = _codes_fingerprint(after)
+    _insert_audit(
+        connection,
+        visit_id=visit_id,
+        reviewer_id=reviewer_id,
+        action="section_diff",
+        section="codes",
+        created_at=created_at,
+        text_changed=old_codes != new_codes,
+        before_len=len(old_codes),
+        after_len=len(new_codes),
+        hash_before=_content_hash(old_codes),
+        hash_after=_content_hash(new_codes),
+    )
+
+
+def _insert_audit(
+    connection: sqlcipher.Connection,
+    *,
+    visit_id: str,
+    reviewer_id: str,
+    action: str,
+    section: str,
+    created_at: datetime,
+    text_changed: bool | None = None,
+    before_len: int | None = None,
+    after_len: int | None = None,
+    hash_before: str | None = None,
+    hash_after: str | None = None,
+) -> None:
+    changed = None if text_changed is None else int(bool(text_changed))
+    delta = None
+    if before_len is not None and after_len is not None:
+        delta = after_len - before_len
+    connection.execute(
+        """
+        INSERT INTO review_audit (
+            id, visit_id, reviewer_id, action, section, created_at,
+            text_changed, before_len, after_len, delta_chars, hash_before, hash_after
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(uuid4()),
+            visit_id,
+            reviewer_id,
+            action,
+            section,
+            created_at.isoformat(),
+            changed,
+            before_len,
+            after_len,
+            delta,
+            hash_before,
+            hash_after,
+        ),
+    )
+    logger.info(
+        "review_action visit_id=%s section=%s action=%s reviewer_id=%s text_changed=%s",
+        visit_id,
+        section,
+        action,
+        reviewer_id,
+        changed,
+    )
+
+
+def _audit_row_to_dict(row: sqlcipher.Row) -> dict[str, object]:
+    keys = row.keys()
+    return {
+        "visit_id": row["visit_id"],
+        "reviewer_id": row["reviewer_id"],
+        "action": row["action"],
+        "section": row["section"],
+        "created_at": row["created_at"],
+        "text_changed": row["text_changed"] if "text_changed" in keys else None,
+        "before_len": row["before_len"] if "before_len" in keys else None,
+        "after_len": row["after_len"] if "after_len" in keys else None,
+        "delta_chars": row["delta_chars"] if "delta_chars" in keys else None,
+        "hash_before": row["hash_before"] if "hash_before" in keys else None,
+        "hash_after": row["hash_after"] if "hash_after" in keys else None,
+    }
 
 
 def _segments_json(segments: list[SpeakerTurn]) -> str:
@@ -241,7 +527,50 @@ def _segments_from_row(row: sqlcipher.Row) -> list[SpeakerTurn]:
     return [SpeakerTurn.model_validate(item) for item in parsed]
 
 
+def _flags_from_row(row: sqlcipher.Row) -> list[AsrFlag]:
+    keys = row.keys()
+    raw = row["asr_flags"] if "asr_flags" in keys else "[]"
+    if not raw:
+        return []
+    parsed = json.loads(raw)
+    return [AsrFlag.model_validate(item) for item in parsed]
+
+
+def _review_from_row(row: sqlcipher.Row) -> ProviderAttestation | None:
+    keys = row.keys()
+    reviewer = row["reviewer_id"] if "reviewer_id" in keys else None
+    when = row["reviewed_at"] if "reviewed_at" in keys else None
+    if not reviewer or not when:
+        return None
+    return ProviderAttestation(
+        reviewer_id=str(reviewer),
+        reviewed_at=datetime.fromisoformat(when),
+    )
+
+
+def _write_audit_rows(
+    connection: sqlcipher.Connection,
+    *,
+    visit_id: str,
+    reviewer_id: str,
+    actions: list[ReviewAction],
+    created_at: datetime,
+) -> None:
+    for item in actions:
+        section = (item.section or "unknown").strip() or "unknown"
+        action = (item.action or "confirm").strip() or "confirm"
+        _insert_audit(
+            connection,
+            visit_id=visit_id,
+            reviewer_id=reviewer_id,
+            action=action,
+            section=section,
+            created_at=created_at,
+        )
+
+
 def _visit_row(visit: Visit) -> tuple:
+    review = visit.provider_review
     return (
         visit.id,
         visit.timestamp.isoformat(),
@@ -250,10 +579,13 @@ def _visit_row(visit: Visit) -> tuple:
         visit.note.model_dump_json(),
         visit.sync_status.value,
         visit.fhir_resource_id,
-        1 if visit.edited_by_provider else 0,
+        review.reviewer_id if review else None,
+        review.reviewed_at.isoformat() if review else None,
+        json.dumps([flag.model_dump() for flag in visit.asr_flags]),
         visit.fhir_patient_id,
         visit.fhir_encounter_id,
         visit.last_sync_error,
+        visit.review_summary,
     )
 
 
@@ -266,8 +598,10 @@ def _row_to_visit(row: sqlcipher.Row) -> Visit:
         note=Note.model_validate(json.loads(row["note_json"])),
         sync_status=SyncStatus(row["sync_status"]),
         fhir_resource_id=row["fhir_resource_id"],
-        edited_by_provider=bool(row["edited_by_provider"]),
+        provider_review=_review_from_row(row),
+        asr_flags=_flags_from_row(row),
         fhir_patient_id=row["fhir_patient_id"],
         fhir_encounter_id=row["fhir_encounter_id"],
         last_sync_error=row["last_sync_error"],
+        review_summary=row["review_summary"] if "review_summary" in row.keys() else None,
     )

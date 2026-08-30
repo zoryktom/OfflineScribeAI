@@ -51,7 +51,7 @@ def test_sync_skips_unreviewed_visit_even_in_dry_run(tmp_path, monkeypatch):
         fhir_encounter_id="encounter-explicit-test",
         db_path=db_path,
     )
-    assert visit.edited_by_provider is False
+    assert visit.is_reviewed() is False
 
     client = MagicMock()
     mapper = MagicMock()
@@ -86,7 +86,12 @@ def test_sync_dry_run_maps_reviewed_linked_visit(tmp_path):
         fhir_encounter_id="encounter-explicit-test",
         db_path=db_path,
     )
-    update_visit_note(visit.id, Note(subjective="reviewed"), db_path=db_path)
+    update_visit_note(
+        visit.id,
+        Note(subjective="reviewed"),
+        reviewer_id="provider-17",
+        db_path=db_path,
+    )
 
     client = MagicMock()
     output = io.StringIO()

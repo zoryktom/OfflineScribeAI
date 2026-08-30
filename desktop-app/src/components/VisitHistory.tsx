@@ -43,7 +43,11 @@ export function VisitHistory({ visits, selectedId, onSelect }: Props) {
                 <span>
                   <strong>{formatWhen(visit.timestamp)}</strong>
                   <span className="caption" style={{ display: "block" }}>
-                    {visit.edited_by_provider ? "Reviewed" : "Draft"}
+                    {visit.review_summary
+                      ? visit.review_summary
+                      : visit.provider_review?.reviewer_id
+                        ? `Reviewed by ${visit.provider_review.reviewer_id}`
+                        : "Draft"}
                   </span>
                 </span>
                 <SyncStatusBadge

@@ -7,10 +7,14 @@ original clinic visit plus three later scripts). Several LLM runs used a
 **cached ASR transcript** so note-generation changes could be isolated from
 ASR variance.
 
-There is **no committed evaluation harness**. Runs used `generate_note()` from
-`backend/app/note_service.py` against those transcripts, with
-`STUB_MODE=false` and `OLLAMA_MODEL=llama3:8b`. The configured default in
-`.env.example` remains `llama3.1:8b`.
+A planted-error harness now lives at `backend/app/eval_harness.py` with
+synthetic fixtures in `backend/tests/eval/fixtures.json`. Run `make eval` or
+`pytest -m eval -o addopts=` (excluded from the default suite). That harness
+**measures** current flaggers; it is not a clinical benchmark.
+
+Earlier SOAP tables below used `generate_note()` against the four encounter
+scripts, with `STUB_MODE=false` and `OLLAMA_MODEL=llama3:8b`. The configured
+default in `.env.example` remains `llama3.1:8b`.
 
 Automated tests (`pytest` in `backend/`) are a separate, repeatable check.
 They mock Ollama except for an opt-in live test (`RUN_OLLAMA_LIVE=1`).
@@ -150,6 +154,85 @@ Single re-runs of the other two samples at temperature 0.2 did not show an
 obvious SOAP-quality regression vs the post-grounding notes (HTN: still
 above-goal / not emergency, E11.9+I10; ankle: sprain + RICE, S93.401A).
 That is two point estimates, not a stability study.
+
+---
+
+## Planted-error harness (2026-08-30)
+
+`backend/app/eval_harness.py` + `backend/tests/eval/fixtures.json`. Eight short synthetic transcripts, each with **one** planted failure **outside** the current lexicons. Stub-compatible. The lists were not edited to pass these cases.
+
+| Failure type | Caught | What that means here |
+| --- | --- | --- |
+| Denied symptom outside the negation lexicon (rash, photophobia, palpitations) | 0/3 | A probe note that asserted the denied symptom was not flagged. |
+| Garbled drug outside the starter list and known-garble map (warfaren, levothyroxeen, gabapentn) | 0/3 | `asr_flags` did not mark the planted tokens. |
+| Family-history stroke talk vs a probe Assessment about acute stroke | 1/1 | Grounding did not cite the mother’s stroke span. |
+| Paraphrase (“can’t catch my breath” vs “shortness of breath”) | 1/1 | Overlap matching linked the paraphrase on this fixture. |
+
+**2/8** planted errors caught. This is a coverage measurement, not a performance claim.
+
+Four **benign** fixtures were added later the same day (differential list language and “call back if X” plan lines), matching the spurious live flags above. The harness now reports false positives beside catch rate. Lexicons were not edited to change these numbers.
+
+| Mechanism | Catch rate (planted) | False positives (benign) |
+| --- | --- | --- |
+| `negation_check` | 0/3 | 3/4 |
+| `asr_flags` | 0/3 | 0/0 (no benign ASR fixtures) |
+| Grounding | 2/2 | 0/0 |
+
+| Benign fixture | Flagged? |
+| --- | --- |
+| Differential “mild viral cough” | yes |
+| Differential “rather than shortness of breath” | yes |
+| Plan “Return if fever lasts more than three days.” | yes |
+| Plan “chest pain that does not stop” | no |
+
+**3/4** false positives on benign fixtures. Combined with the planted set: **2/8** caught, **3/4** false positives.
+
+---
+
+## Live `generate_note()` + flaggers (2026-08-30)
+
+`STUB_MODE=false`, `OLLAMA_MODEL=llama3:8b` (same model as the earlier tables; `llama3.1:8b` remains the config default and was previously too slow on this machine). Each of the four written encounter scripts was run **twice**. Wall clock for the eight calls was about **21 minutes** on the same CPU Mac. `asr_flags` was run on the **script text** (correct drug spellings), not on ASR audio.
+
+| Script | Run | ICD-10 | `verification_needs` | `asr_flags` | Assessment (abridged) |
+| --- | --- | --- | --- | --- | --- |
+| Clinic visit | 1 | J06.9 | 0 | 0 | Viral URI more than pneumonia; no “well controlled” on this run |
+| Clinic visit | 2 | J06.9 | 0 | 0 | Same as run 1 |
+| HTN / diabetes | 1 | E11.9, I10 | 0 | 0 | BP a bit above goal, not an emergency |
+| HTN / diabetes | 2 | E11.9, I10 | 0 | 0 | Same idea, shorter wording |
+| Ankle sprain | 1 | S93.401A | 0 | 0 | Right ankle sprain |
+| Ankle sprain | 2 | S93.401A | 0 | 0 | Right ankle sprain |
+| Ambiguous visit | 1 | UNMATCHED | **2** (assessment, plan) | 0 | Differential; not a single diagnosis |
+| Ambiguous visit | 2 | UNMATCHED | **1** (assessment) | 0 | Same differential |
+
+**Did the live path produce flags?** Yes for `verification_needs` on the ambiguous script (3 flags across 2 runs). `asr_flags` was 0 on all eight script-text runs.
+
+**Were those negation flags correct?** On a third ambiguous-visit call used only to inspect sentences, the flagged lines were:
+
+- Assessment: “Could be poor sleep, caffeine, worry, a mild viral cough…”
+- Plan: safety-netting that includes “chest pain that doesn’t stop”
+
+The model did **not** repeat the older failure (asserting fever / SOB at rest as present). The live flags were therefore **not** a catch of that historical error. They look **spurious**: “cough” sits in the same transcript chunks as “don’t”, and “chest pain” appears as a warning, not a confirmed finding.
+
+**ASR flags on script text:** expected empty (dialogues spell lisinopril / metformin correctly). A follow-up probe of the known “liz in April” garble still produced one `asr_flags` hit, so the checker is not dead — it never saw garbled tokens in these written scripts.
+
+Zero flags across *all* live notes would have been treated as a wiring bug. That did not happen for negation. ASR-on-scripts being empty was investigated and is explained above.
+
+---
+
+## Live ASR on slurred-medication TTS (2026-08-30)
+
+Script: `audio_samples/synthetic_garbled_meds_dialogue.txt`. The `.wav` is gitignored (same as the longer visit clips). Spoken TTS used broken names (“lizino prill”, “atorva statin”) at a fast Fred voice, 16 kHz mono, ~8 s. Intended medications: **lisinopril**, **atorvastatin**.
+
+Full pipeline twice: `transcribe_audio()` (`faster-whisper` `small.en`, CPU, `int8`) then `generate_note()` (`STUB_MODE=false`, `OLLAMA_MODEL=llama3:8b`). This is **real ASR text**, not the old hand-typed “liz” probe.
+
+| Run | ASR wall | Note wall | Whisper text (abridged) | `asr_flags` | SOAP / ICD |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 3.6 s | 56 s | “…Lazino Pril 10 milligrams… Adorvastatin 40 milligrams.” | **1** — `unusual_medication_token` on **Adorvastatin** | Assessment copied both garbles; `UNMATCHED` |
+| 2 | 5.5 s | 24 s | Same transcript as run 1 | **1** — same **Adorvastatin** flag | Same Assessment copy; `UNMATCHED` |
+
+**Did `asr_flags` fire on real ASR output?** Yes, on **Adorvastatin** in both runs. It did **not** fire on **Lazino Pril** (the lisinopril miss). The note path then wrote both wrong strings into Assessment. The known “liz” text probe is a separate wiring check and is not this result.
+
+No lexicon or known-garble edits were made after this run.
 
 ---
 

@@ -13,6 +13,9 @@ Rules:
   medication control status, or allergy history), leave it out. Do not guess
   and do not fill in a plausible-sounding default.
 - When you are uncertain whether the transcript supports a detail, omit it.
+- Never assert a symptom or finding that was only asked about, denied, or
+  left unconfirmed. A clinician question (for example "Fever?") is not a
+  positive finding. "I don't think so" / "no" / "denied" means omit it.
 - If timestamped segments are included, use them for chronology and for
   citations. Cite only ranges that actually appear.
 - If a SOAP section was not discussed, write "Not documented in visit".

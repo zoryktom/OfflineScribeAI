@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     # Shared secret for localhost API routes except /health.
     local_api_key: str = ""
 
+    # Tests and local scaffolding set this true. A pilot run should leave it false.
+    allow_dev_defaults: bool = False
+
+    # Delete visits older than this many days on startup. 0 disables purge.
+    visit_retention_days: int = 0
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

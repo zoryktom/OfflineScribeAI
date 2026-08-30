@@ -25,6 +25,29 @@ export type GroundedSection = {
   directly_stated: boolean;
 };
 
+export type VerificationNeed = {
+  section: string;
+  sentence_index: number;
+  reason: string;
+};
+
+export type AsrFlag = {
+  start_s: number;
+  end_s: number;
+  text: string;
+  reason: string;
+};
+
+export type ReviewAction = {
+  section: string;
+  action: string;
+};
+
+export type ProviderAttestation = {
+  reviewer_id: string;
+  reviewed_at: string;
+};
+
 export type Note = {
   subjective: string;
   objective: string;
@@ -36,6 +59,7 @@ export type Note = {
   objective_grounding?: GroundedSection;
   assessment_grounding?: GroundedSection;
   plan_grounding?: GroundedSection;
+  verification_needs?: VerificationNeed[];
 };
 
 export type SpeakerTurn = {
@@ -53,10 +77,12 @@ export type Visit = {
   note: Note;
   sync_status: SyncStatus;
   fhir_resource_id: string | null;
-  edited_by_provider: boolean;
+  provider_review: ProviderAttestation | null;
+  asr_flags: AsrFlag[];
   fhir_patient_id: string | null;
   fhir_encounter_id: string | null;
   last_sync_error: string | null;
+  review_summary: string | null;
 };
 
 export type HealthResponse = {
@@ -115,11 +141,20 @@ export async function createVisitFromAudio(file: File): Promise<Visit> {
   return request<Visit>("/visits", { method: "POST", body });
 }
 
-export function updateVisitNote(id: string, note: Note): Promise<Visit> {
+export function updateVisitNote(
+  id: string,
+  note: Note,
+  reviewerId: string,
+  sectionActions: ReviewAction[],
+): Promise<Visit> {
   return request<Visit>(`/visits/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ note, edited_by_provider: true }),
+    body: JSON.stringify({
+      note,
+      reviewer_id: reviewerId,
+      section_actions: sectionActions,
+    }),
   });
 }
 
@@ -127,3 +162,6 @@ export function runSync(dryRun = true): Promise<SyncRunResult> {
   const query = dryRun ? "?dry_run=true" : "";
   return request<SyncRunResult>(`/sync${query}`, { method: "POST" });
 }
+
+export const DRAFT_BANNER =
+  "AI-generated draft — verify against the transcript before relying on any content, especially medications, diagnoses, and negative findings.";

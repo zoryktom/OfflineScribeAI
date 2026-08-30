@@ -1,0 +1,17 @@
+SYNTHETIC TEST DATA — NOT REAL PATIENT INFORMATION
+====================================================
+Purpose: Short refill-style clip whose spoken medication names are
+intentionally slurred / broken so faster-whisper is likely to emit real
+ASR errors. Used to check whether asr_flags fires on actual ASR tokens,
+not on a hand-typed "liz" probe.
+Intended medications (correct spellings): lisinopril, atorvastatin.
+Spoken line (TTS): "lizino prill" and "atorva statin" at a fast rate.
+Do not treat names, ages, meds, or vitals as real clinical records.
+
+---
+
+PROVIDER: This is a blood pressure and cholesterol refill. Any new problems today?
+
+PATIENT: No. I still take the lisinopril ten milligrams every morning and the atorvastatin forty milligrams at night.
+
+PROVIDER: Stay on those same two pills. Call if you get chest pain or severe muscle pain. Take care.

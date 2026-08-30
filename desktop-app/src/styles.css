@@ -330,6 +330,55 @@ select {
   color: var(--failed);
 }
 
+.draft-banner {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #d4c4a8;
+  background: #f4ead4;
+  color: var(--text);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+.verify-flag,
+.asr-flag,
+.unverified-label {
+  margin: 0 0 0.65rem;
+  font-size: var(--text-caption);
+  font-weight: 650;
+  color: #7a5a20;
+}
+
+.asr-flag {
+  margin: 0.35rem 0 0;
+  font-weight: 600;
+}
+
+.transcript.is-flagged {
+  background: #f7efd8;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+}
+
+.text-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  background: #fff;
+  color: var(--text);
+}
+
+.reviewer-field {
+  display: block;
+  margin-top: 1.25rem;
+}
+
+.review-summary {
+  margin: 0.65rem 0 0;
+}
+
 .step-index {
   font-size: var(--text-caption);
   color: var(--text-muted);

@@ -9,7 +9,7 @@ Do not add recordings that contain identifiable patient speech.
 | File | Role |
 | --- | --- |
 | `english_speech_sample.wav` | Short synthetic English speech (macOS `say`) for the ASR unit test. Not a visit recording. |
-| `*_dialogue.txt` | Written mock clinician–patient scripts used to synthesize longer evaluation audio. |
+| `*_dialogue.txt` | Written mock clinician–patient scripts used to synthesize longer evaluation audio. Includes `synthetic_garbled_meds_dialogue.txt` (short refill clip with two intentionally slurred drug names). |
 
 ## Not committed (gitignored)
 
@@ -20,6 +20,7 @@ Longer `.wav` files are omitted from git because they are large binaries and can
 - `synthetic_ankle_sprain.wav`
 - `synthetic_ambiguous_visit.wav`
 - `placeholder_visit.wav` (silence; real ASR fails with “no speech detected”)
+- `synthetic_garbled_meds.wav` (short slurred-medication TTS used for the live ASR flag check)
 
 Those visit recordings were produced with macOS two-voice text-to-speech (Samantha / Fred) from the matching `*_dialogue.txt` files. Exact waveforms will not match a new TTS run, so ASR transcripts can differ slightly from the original evaluation logs.
 

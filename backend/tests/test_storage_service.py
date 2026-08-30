@@ -42,7 +42,8 @@ def test_create_and_fetch_visit(tmp_path):
     assert fetched.transcript_segments[0].speaker == "unknown"
     assert fetched.note.subjective == "Cough for three days."
     assert fetched.sync_status is SyncStatus.pending
-    assert fetched.edited_by_provider is False
+    assert fetched.provider_review is None
+    assert fetched.is_reviewed() is False
     assert fetched.fhir_resource_id is None
     assert fetched.fhir_patient_id is None
     assert fetched.fhir_encounter_id is None
@@ -56,12 +57,14 @@ def test_update_note_and_mark_synced(tmp_path):
     updated = update_visit_note(
         visit.id,
         Note(subjective="edited by provider"),
-        edited_by_provider=True,
+        reviewer_id="provider-17",
         db_path=db_path,
     )
     assert updated is not None
     assert updated.note.subjective == "edited by provider"
-    assert updated.edited_by_provider is True
+    assert updated.is_reviewed() is True
+    assert updated.provider_review is not None
+    assert updated.provider_review.reviewer_id == "provider-17"
 
     pending = list_pending_visits(db_path=db_path)
     assert [item.id for item in pending] == [visit.id]

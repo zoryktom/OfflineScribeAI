@@ -129,3 +129,59 @@ def test_create_visit_returns_persisted_segments(monkeypatch):
     assert grounding["sources"]
     assert grounding["sources"][0]["text"]
     assert grounding["directly_stated"] is True
+    assert body["provider_review"] is None
+    assert body["asr_flags"] == []
+
+
+def test_patch_requires_named_reviewer_and_records_attestation(monkeypatch):
+    monkeypatch.setattr(
+        "app.main.transcribe_audio",
+        lambda _path: TranscriptResult(
+            text="hello there",
+            segments=[
+                SpeakerTurn(
+                    speaker="unknown",
+                    start_s=0.0,
+                    end_s=1.4,
+                    text="hello there",
+                )
+            ],
+        ),
+    )
+    with TestClient(app) as client:
+        created = client.post(
+            "/visits",
+            headers={"X-API-Key": _key()},
+            files={"audio": ("visit.wav", b"RIFF", "audio/wav")},
+        )
+        assert created.status_code == 200
+        visit_id = created.json()["id"]
+        note = created.json()["note"]
+
+        missing = client.patch(
+            f"/visits/{visit_id}",
+            headers={"X-API-Key": _key()},
+            json={"note": note},
+        )
+        assert missing.status_code == 422
+
+        blank = client.patch(
+            f"/visits/{visit_id}",
+            headers={"X-API-Key": _key()},
+            json={"note": note, "reviewer_id": "   "},
+        )
+        assert blank.status_code == 422
+
+        saved = client.patch(
+            f"/visits/{visit_id}",
+            headers={"X-API-Key": _key()},
+            json={
+                "note": note,
+                "reviewer_id": "np-44",
+                "section_actions": [{"section": "subjective", "action": "confirm"}],
+            },
+        )
+        assert saved.status_code == 200
+        body = saved.json()
+        assert body["provider_review"]["reviewer_id"] == "np-44"
+        assert body["provider_review"]["reviewed_at"]

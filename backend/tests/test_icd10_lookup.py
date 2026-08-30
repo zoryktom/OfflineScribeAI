@@ -16,6 +16,16 @@ def test_starter_set_matches_cms_j06_9_and_has_no_j40_0():
     assert 30 <= len(codes) <= 50
 
 
+def test_lookup_is_deterministic_for_identical_phrases():
+    phrases = ["anxiety", "headache", "anxiety"]
+    first = lookup_diagnoses(phrases)
+    second = lookup_diagnoses(list(reversed(phrases)))
+    assert [item.code for item in first] == [item.code for item in second]
+    assert all(item.accepted is None for item in first)
+    codes = [item.code for item in first]
+    assert codes == sorted(codes)
+
+
 def test_lookup_viral_uri_returns_j06_9_not_bronchitis():
     matched = lookup_diagnoses(["viral upper respiratory infection"])
     assert [item.code for item in matched] == ["J06.9"]

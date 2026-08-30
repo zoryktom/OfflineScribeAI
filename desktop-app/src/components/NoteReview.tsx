@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
-import type { GroundedSection, Note } from "../api/client";
+import type { GroundedSection, Note, ReviewAction, VerificationNeed } from "../api/client";
+import { DRAFT_BANNER } from "../api/client";
 
 const SECTIONS = [
   "subjective",
@@ -89,15 +90,21 @@ function SourceAttribution({ grounding }: { grounding?: GroundedSection }) {
   );
 }
 
+function needsVerification(flags: VerificationNeed[] | undefined, section: string): boolean {
+  return (flags ?? []).some((item) => item.section === section);
+}
+
 type Props = {
   note: Note;
   saving: boolean;
-  onSave: (note: Note) => Promise<void>;
+  onSave: (note: Note, reviewerId: string, actions: ReviewAction[]) => Promise<void>;
 };
 
 export function NoteReview({ note, saving, onSave }: Props) {
   const [draft, setDraft] = useState<Note>(note);
   const [step, setStep] = useState(0);
+  const [reviewerId, setReviewerId] = useState("");
+  const [actions, setActions] = useState<ReviewAction[]>([]);
 
   const section = SECTIONS[step];
   const isLast = step === SECTIONS.length - 1;
@@ -106,6 +113,10 @@ export function NoteReview({ note, saving, onSave }: Props) {
     () => `Section ${step + 1} of ${SECTIONS.length}`,
     [step],
   );
+
+  function recordAction(nextSection: string, action: string) {
+    setActions((current) => [...current, { section: nextSection, action }]);
+  }
 
   function updateField(field: SoapSection, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -118,6 +129,7 @@ export function NoteReview({ note, saving, onSave }: Props) {
         item.code === code ? { ...item, accepted } : item,
       ),
     }));
+    recordAction("codes", accepted ? "accept" : "reject");
   }
 
   const soapSection = section as SoapSection;
@@ -126,9 +138,13 @@ export function NoteReview({ note, saving, onSave }: Props) {
     section === "objective" ||
     section === "assessment" ||
     section === "plan";
+  const canSave = reviewerId.trim().length > 0;
 
   return (
     <section className="panel" aria-labelledby="note-heading">
+      <p className="draft-banner" role="status">
+        {DRAFT_BANNER}
+      </p>
       <p className="section-label">SOAP note</p>
       <h2 id="note-heading" className="note-heading">
         Review this note
@@ -138,6 +154,10 @@ export function NoteReview({ note, saving, onSave }: Props) {
       <p className="caption" style={{ marginBottom: "1rem" }}>
         {HINTS[section]}
       </p>
+
+      {isSoap && needsVerification(draft.verification_needs, soapSection) ? (
+        <p className="verify-flag">Needs verification</p>
+      ) : null}
 
       {isSoap ? (
         <>
@@ -164,10 +184,14 @@ export function NoteReview({ note, saving, onSave }: Props) {
                 </>
               ) : (
                 <>
+                  {item.accepted !== true ? (
+                    <p className="unverified-label">AI-suggested, unverified</p>
+                  ) : null}
                   <strong>
                     {item.code}
                     {item.accepted === true ? " · accepted" : null}
                     {item.accepted === false ? " · not used" : null}
+                    {item.accepted == null ? " · unaccepted" : null}
                   </strong>
                   <p className="caption">{item.description}</p>
                   <div className="row" style={{ marginTop: "0.65rem" }}>
@@ -196,14 +220,29 @@ export function NoteReview({ note, saving, onSave }: Props) {
       ) : null}
 
       {section === "followup" ? (
-        <ul className="follow-up-list">
-          {draft.follow_up.map((item) => (
-            <li key={item.text} className="follow-up-item">
-              <div>{item.text}</div>
-              {item.timeframe ? <p className="caption">{item.timeframe}</p> : null}
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="follow-up-list">
+            {draft.follow_up.map((item) => (
+              <li key={item.text} className="follow-up-item">
+                <div>{item.text}</div>
+                {item.timeframe ? <p className="caption">{item.timeframe}</p> : null}
+              </li>
+            ))}
+          </ul>
+          <label className="reviewer-field">
+            <span className="section-label">Reviewing provider id</span>
+            <input
+              className="text-input"
+              value={reviewerId}
+              onChange={(event) => setReviewerId(event.target.value)}
+              autoComplete="off"
+              required
+            />
+            <p className="caption">
+              Required. Sync and FHIR dry-run stay blocked until a named reviewer confirms.
+            </p>
+          </label>
+        </>
       ) : null}
 
       <div className="row" style={{ marginTop: "1.25rem" }}>
@@ -219,8 +258,19 @@ export function NoteReview({ note, saving, onSave }: Props) {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => void onSave(draft)}
-            disabled={saving}
+            onClick={() => {
+              const soapEdits: ReviewAction[] = (
+                ["subjective", "objective", "assessment", "plan"] as const
+              )
+                .filter((name) => draft[name] !== note[name])
+                .map((name) => ({ section: name, action: "edit" }));
+              void onSave(draft, reviewerId.trim(), [
+                ...actions,
+                ...soapEdits,
+                { section: "note", action: "confirm" },
+              ]);
+            }}
+            disabled={saving || !canSave}
           >
             {saving ? "Saving…" : "Save reviewed note"}
           </button>

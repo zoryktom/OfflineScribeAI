@@ -25,6 +25,7 @@ from app.models import (
     SuggestedIcd10,
     TranscriptResult,
 )
+from app.negation_check import flag_negation_assertions
 from app.prompts import SOAP_NOTE_SYSTEM_PROMPT, SOAP_NOTE_USER_PROMPT
 
 
@@ -43,7 +44,18 @@ def generate_note(transcript: str | TranscriptResult) -> Note:
         )
 
     if settings.stub_mode:
-        return _stub_note()
+        note = _stub_note()
+        note.verification_needs = flag_negation_assertions(
+            {
+                "subjective": note.subjective,
+                "objective": note.objective,
+                "assessment": note.assessment,
+                "plan": note.plan,
+            },
+            prompt_transcript,
+            transcript.segments if isinstance(transcript, TranscriptResult) else None,
+        )
+        return note
 
     _assert_ollama_ready()
     return _generate_with_ollama(prompt_transcript, transcript)
@@ -228,6 +240,18 @@ def _note_from_model_payload(
                 )
             )
 
+    source_text = original.text if isinstance(original, TranscriptResult) else original
+    verification_needs = flag_negation_assertions(
+        {
+            "subjective": sections["subjective"][0],
+            "objective": sections["objective"][0],
+            "assessment": sections["assessment"][0],
+            "plan": sections["plan"][0],
+        },
+        source_text,
+        segments,
+    )
+
     return Note(
         subjective=sections["subjective"][0],
         objective=sections["objective"][0],
@@ -239,6 +263,7 @@ def _note_from_model_payload(
         objective_grounding=sections["objective"][1],
         assessment_grounding=sections["assessment"][1],
         plan_grounding=sections["plan"][1],
+        verification_needs=verification_needs,
     )
 
 

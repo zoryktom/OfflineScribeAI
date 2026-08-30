@@ -37,17 +37,20 @@ _STOP = {
 
 
 def lookup_diagnoses(phrases: list[str]) -> list[SuggestedIcd10]:
-    """Map plain-language diagnoses to starter-set codes. Never invent a code."""
+    """Map plain-language diagnoses to starter-set codes. Never invent a code.
+
+    Identical phrase lists always produce the same ordered result: matches are
+    cached per normalized phrase, ties break on code string, and output is
+    sorted by code. Suggested codes stay unaccepted (accepted is always None).
+    """
     found: list[SuggestedIcd10] = []
     seen: set[str] = set()
-    unmatched_phrases: list[str] = []
     for raw in phrases:
         phrase = (raw or "").strip()
         if not phrase:
             continue
         match = _best_match(phrase)
         if match is None:
-            unmatched_phrases.append(phrase)
             continue
         if match.code in seen:
             continue
@@ -59,6 +62,7 @@ def lookup_diagnoses(phrases: list[str]) -> list[SuggestedIcd10]:
                 accepted=None,
             )
         )
+    found.sort(key=lambda item: item.code)
     if found:
         return found
     return [
@@ -71,9 +75,11 @@ def lookup_diagnoses(phrases: list[str]) -> list[SuggestedIcd10]:
 
 
 @lru_cache(maxsize=1)
-def load_starter_set() -> list[dict]:
+def load_starter_set() -> tuple[dict, ...]:
     payload = json.loads(_DATA_PATH.read_text(encoding="utf-8"))
-    return list(payload["codes"])
+    rows = list(payload["codes"])
+    rows.sort(key=lambda row: str(row.get("code", "")))
+    return tuple(rows)
 
 
 def _looks_like_icd10_code(phrase: str) -> bool:
@@ -82,6 +88,7 @@ def _looks_like_icd10_code(phrase: str) -> bool:
     return bool(re.fullmatch(r"[a-z][0-9]{2}[0-9a-z]{0,4}", compact))
 
 
+@lru_cache(maxsize=256)
 def _best_match(phrase: str) -> SuggestedIcd10 | None:
     # Never accept a model-recalled code string as if it were a diagnosis name.
     if _looks_like_icd10_code(phrase):
@@ -90,7 +97,7 @@ def _best_match(phrase: str) -> SuggestedIcd10 | None:
     if not normalized:
         return None
     negated = bool(re.search(r"\b(no|not|without|denies|denied|ruled out)\b", normalized))
-    best: tuple[int, SuggestedIcd10] | None = None
+    best: tuple[int, str, SuggestedIcd10] | None = None
     for row in load_starter_set():
         aliases = [_normalize(row["description"]), *(_normalize(a) for a in row.get("aliases", []))]
         score = 0
@@ -108,18 +115,25 @@ def _best_match(phrase: str) -> SuggestedIcd10 | None:
                 overlap = _token_overlap(normalized, alias)
                 if overlap >= 0.55:
                     score = max(score, int(50 + overlap * 20) + len(alias.split()))
-        if score > 0 and (best is None or score > best[0]):
-            best = (
-                score,
-                SuggestedIcd10(
-                    code=row["code"],
-                    description=row["description"],
-                    accepted=None,
-                ),
-            )
+        if score <= 0:
+            continue
+        code = str(row["code"])
+        candidate = (
+            score,
+            code,
+            SuggestedIcd10(
+                code=code,
+                description=row["description"],
+                accepted=None,
+            ),
+        )
+        if best is None or candidate[0] > best[0] or (
+            candidate[0] == best[0] and candidate[1] < best[1]
+        ):
+            best = candidate
     if best is None or best[0] < 70:
         return None
-    return best[1]
+    return best[2]
 
 
 def _normalize(text: str) -> str:

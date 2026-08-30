@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from app.config import get_settings
+from app.asr_flags import flag_asr_concerns
 from app.models import SpeakerTurn, TranscriptResult
 
 logger = logging.getLogger(__name__)
@@ -224,9 +225,11 @@ def transcribe_audio(audio_path: str | Path) -> TranscriptResult:
         raw_segments, info = model.transcribe(
             str(path),
             language=settings.language,
+            word_timestamps=True,
         )
         segments: list[SpeakerTurn] = []
         parts: list[str] = []
+        words: list[tuple[str, float, float, float | None]] = []
         for raw in raw_segments:
             text = (raw.text or "").strip()
             if not text:
@@ -243,6 +246,19 @@ def transcribe_audio(audio_path: str | Path) -> TranscriptResult:
                     text=text,
                 )
             )
+            for word in getattr(raw, "words", None) or []:
+                token = (getattr(word, "word", "") or "").strip()
+                if not token:
+                    continue
+                probability = getattr(word, "probability", None)
+                words.append(
+                    (
+                        token,
+                        float(getattr(word, "start", raw.start)),
+                        float(getattr(word, "end", raw.end)),
+                        float(probability) if probability is not None else None,
+                    )
+                )
     except AsrError:
         raise
     except Exception as exc:
@@ -260,7 +276,15 @@ def transcribe_audio(audio_path: str | Path) -> TranscriptResult:
         )
 
     language = getattr(info, "language", None) or settings.language
-    return TranscriptResult(text=full_text, language=language, segments=segments)
+    asr_flags = flag_asr_concerns(segments, words=words or None)
+    if asr_flags:
+        logger.info("asr review_flags=%s", len(asr_flags))
+    return TranscriptResult(
+        text=full_text,
+        language=language,
+        segments=segments,
+        asr_flags=asr_flags,
+    )
 
 
 def _require_ffmpeg() -> str:

@@ -1,0 +1,13 @@
+acetaminophen
+albuterol
+amlodipine
+amoxicillin
+atorvastatin
+azithromycin
+ibuprofen
+lisinopril
+losartan
+metformin
+omeprazole
+prednisone
+simvastatin

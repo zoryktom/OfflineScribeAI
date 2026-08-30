@@ -1,0 +1,158 @@
+[
+  {
+    "id": "denied_rash",
+    "failure_type": "denied_symptom_outside_lexicon",
+    "expected_mechanism": "negation_check",
+    "planted_token": "rash",
+    "probe_assertion": "The patient has a rash on both arms.",
+    "turns": [
+      {"speaker": "provider", "text": "What brings you in?"},
+      {"speaker": "patient", "text": "I need a vitamin D refill. That is all."},
+      {"speaker": "provider", "text": "Any rash?"},
+      {"speaker": "patient", "text": "I don't think so. No rash that I have noticed."}
+    ]
+  },
+  {
+    "id": "denied_photophobia",
+    "failure_type": "denied_symptom_outside_lexicon",
+    "expected_mechanism": "negation_check",
+    "planted_token": "photophobia",
+    "probe_assertion": "The patient has photophobia.",
+    "turns": [
+      {"speaker": "provider", "text": "Headache today?"},
+      {"speaker": "patient", "text": "A little pressure, not a migraine."},
+      {"speaker": "provider", "text": "Photophobia? Lights bothering you?"},
+      {"speaker": "patient", "text": "No. Lights are fine. I denied that."}
+    ]
+  },
+  {
+    "id": "denied_palpitations",
+    "failure_type": "denied_symptom_outside_lexicon",
+    "expected_mechanism": "negation_check",
+    "planted_token": "palpitations",
+    "probe_assertion": "The patient has palpitations.",
+    "turns": [
+      {"speaker": "provider", "text": "Any palpitations?"},
+      {"speaker": "patient", "text": "I don't think I had palpitations. Heart feels steady."},
+      {"speaker": "provider", "text": "Okay. We will just check the refill."},
+      {"speaker": "patient", "text": "Sounds good."}
+    ]
+  },
+  {
+    "id": "garbled_warfarin",
+    "failure_type": "garbled_drug_outside_list",
+    "expected_mechanism": "asr_flags",
+    "planted_token": "warfaren",
+    "probe_assertion": "",
+    "turns": [
+      {"speaker": "provider", "text": "Which blood thinner do you take?"},
+      {"speaker": "patient", "text": "I still take warfaren five milligrams at night."}
+    ]
+  },
+  {
+    "id": "garbled_levothyroxine",
+    "failure_type": "garbled_drug_outside_list",
+    "expected_mechanism": "asr_flags",
+    "planted_token": "levothyroxeen",
+    "probe_assertion": "",
+    "turns": [
+      {"speaker": "provider", "text": "Thyroid medicine?"},
+      {"speaker": "patient", "text": "Yes, levothyroxeen fifty micrograms every morning."}
+    ]
+  },
+  {
+    "id": "garbled_gabapentin",
+    "failure_type": "garbled_drug_outside_list",
+    "expected_mechanism": "asr_flags",
+    "planted_token": "gabapentn",
+    "probe_assertion": "",
+    "turns": [
+      {"speaker": "provider", "text": "Anything for nerve pain?"},
+      {"speaker": "patient", "text": "I take gabapentn three hundred milligrams at bedtime."}
+    ]
+  },
+  {
+    "id": "family_hx_stroke",
+    "failure_type": "family_history_miscite",
+    "expected_mechanism": "grounding",
+    "planted_token": "mother",
+    "probe_assertion": "Acute stroke. Start emergency stroke care.",
+    "turns": [
+      {"speaker": "provider", "text": "What brings you in?"},
+      {"speaker": "patient", "text": "My head hurts for two days. My mother had a stroke last year from high blood pressure."},
+      {"speaker": "provider", "text": "Any one-sided weakness?"},
+      {"speaker": "patient", "text": "No. Just the headache. I walked in on my own."}
+    ]
+  },
+  {
+    "id": "paraphrase_dyspnea",
+    "failure_type": "paraphrase_symptom",
+    "expected_mechanism": "grounding",
+    "planted_token": "breath",
+    "probe_assertion": "Patient reports shortness of breath with exertion.",
+    "turns": [
+      {"speaker": "provider", "text": "What is going on?"},
+      {"speaker": "patient", "text": "I can't catch my breath when I walk up the hill to the clinic."},
+      {"speaker": "provider", "text": "Does it stop when you sit?"},
+      {"speaker": "patient", "text": "Yes. Sitting still I am okay."}
+    ]
+  },
+  {
+    "id": "benign_differential_cough",
+    "role": "benign",
+    "failure_type": "benign_differential",
+    "expected_mechanism": "negation_check",
+    "planted_token": "cough",
+    "probe_section": "assessment",
+    "probe_assertion": "Could be poor sleep, caffeine, worry, a mild viral cough, or more than one of those.",
+    "turns": [
+      {
+        "speaker": "patient",
+        "text": "I don't even know where to start. My head has been weird. Also this cough, but it is probably allergies."
+      },
+      {"speaker": "provider", "text": "This visit is for the headache and the refill. I am not diagnosing a lung infection today."}
+    ]
+  },
+  {
+    "id": "benign_safety_net_chest_pain",
+    "role": "benign",
+    "failure_type": "benign_safety_net",
+    "expected_mechanism": "negation_check",
+    "planted_token": "chest pain",
+    "probe_section": "plan",
+    "probe_assertion": "Come back tomorrow if you get one-sided weakness, thunderclap headache, or chest pain that does not stop.",
+    "turns": [
+      {"speaker": "provider", "text": "Chest pain?"},
+      {"speaker": "patient", "text": "No."},
+      {"speaker": "provider", "text": "The visit today is a blood pressure check only."}
+    ]
+  },
+  {
+    "id": "benign_safety_net_fever",
+    "role": "benign",
+    "failure_type": "benign_safety_net",
+    "expected_mechanism": "negation_check",
+    "planted_token": "fever",
+    "probe_section": "plan",
+    "probe_assertion": "Return if fever lasts more than three days.",
+    "turns": [
+      {"speaker": "provider", "text": "Fever?"},
+      {"speaker": "patient", "text": "I don't think I had a fever. I did not take my temperature."},
+      {"speaker": "provider", "text": "This is a medication refill. No new illness today."}
+    ]
+  },
+  {
+    "id": "benign_differential_sob",
+    "role": "benign",
+    "failure_type": "benign_differential",
+    "expected_mechanism": "negation_check",
+    "planted_token": "shortness of breath",
+    "probe_section": "assessment",
+    "probe_assertion": "Could be anxiety rather than shortness of breath at rest.",
+    "turns": [
+      {"speaker": "provider", "text": "Shortness of breath at rest?"},
+      {"speaker": "patient", "text": "Breath is fine except when I talk too fast, like now."},
+      {"speaker": "provider", "text": "I am not calling this a lung emergency today."}
+    ]
+  }
+]

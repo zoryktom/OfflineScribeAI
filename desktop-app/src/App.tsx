@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  DRAFT_BANNER,
   createVisitFromAudio,
   getHealth,
   listVisits,
@@ -8,6 +9,7 @@ import {
   updateVisitNote,
   type HealthResponse,
   type Note,
+  type ReviewAction,
   type Visit,
 } from "./api/client";
 import { NoteReview } from "./components/NoteReview";
@@ -62,14 +64,14 @@ export default function App() {
     }
   }
 
-  async function handleSave(note: Note) {
+  async function handleSave(note: Note, reviewerId: string, actions: ReviewAction[]) {
     if (!selected) {
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const updated = await updateVisitNote(selected.id, note);
+      const updated = await updateVisitNote(selected.id, note, reviewerId, actions);
       setSelected(updated);
       await refresh();
       setMessage("Reviewed note saved on this computer.");
@@ -134,13 +136,20 @@ export default function App() {
               fhirPatientId={selected.fhir_patient_id}
               fhirEncounterId={selected.fhir_encounter_id}
             />
+            {selected.review_summary ? (
+              <p className="caption review-summary">{selected.review_summary}</p>
+            ) : null}
           </div>
+          <p className="draft-banner" role="status">
+            {DRAFT_BANNER}
+          </p>
           <TranscriptView
             transcript={selected.transcript}
             segments={selected.transcript_segments ?? []}
+            asrFlags={selected.asr_flags ?? []}
           />
           <NoteReview
-            key={selected.id + String(selected.edited_by_provider)}
+            key={selected.id + (selected.provider_review?.reviewed_at ?? "draft")}
             note={selected.note}
             saving={saving}
             onSave={handleSave}

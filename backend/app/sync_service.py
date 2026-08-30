@@ -113,7 +113,7 @@ def _sync_one(
             error=SKIP_MISSING_CHART,
         )
 
-    if not visit.edited_by_provider:
+    if not visit.is_reviewed():
         logger.info("sync skipped visit_id=%s reason=not_yet_reviewed_by_provider", visit.id)
         return SyncVisitResult(
             visit_id=visit.id,

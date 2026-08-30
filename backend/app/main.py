@@ -26,11 +26,14 @@ from app.models import (
     VisitUpdate,
 )
 from app.note_service import NoteGenerationError, generate_note
+from app.startup_checks import StartupError, run_startup_checks
 from app.storage_service import (
+    StorageError,
     create_visit,
     get_visit,
     init_db,
     list_visits,
+    purge_expired_visits,
     update_visit_note,
 )
 from app.sync_service import sync_pending_visits
@@ -43,7 +46,13 @@ _settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    try:
+        run_startup_checks()
+    except StartupError as exc:
+        logger.error("startup refused: %s", exc)
+        raise
     init_db()
+    purge_expired_visits()
     settings = get_settings()
     if settings.asr_preload:
         load_whisper_model()
@@ -115,6 +124,7 @@ async def create_visit_from_audio(audio: UploadFile = File(...)) -> Visit:
                 transcript.text,
                 note,
                 transcript_segments=transcript.segments,
+                asr_flags=transcript.asr_flags,
             )
         except AsrError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -174,14 +184,19 @@ def get_visit_by_id(visit_id: str) -> Visit:
 
 @app.patch("/visits/{visit_id}", response_model=Visit, dependencies=[Depends(require_local_api_key)])
 def patch_visit(visit_id: str, update: VisitUpdate) -> Visit:
-    visit = update_visit_note(
-        visit_id,
-        update.note,
-        edited_by_provider=update.edited_by_provider,
-    )
+    try:
+        visit = update_visit_note(
+            visit_id,
+            update.note,
+            reviewer_id=update.reviewer_id,
+            section_actions=update.section_actions,
+        )
+    except StorageError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if visit is None:
         raise HTTPException(status_code=404, detail="Visit not found on this computer.")
-    logger.info("visit updated visit_id=%s edited_by_provider=%s", visit.id, visit.edited_by_provider)
+    reviewer = visit.provider_review.reviewer_id if visit.provider_review else ""
+    logger.info("visit updated visit_id=%s reviewer_id=%s", visit.id, reviewer)
     return visit
 
 
