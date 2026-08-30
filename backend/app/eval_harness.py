@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -15,7 +16,10 @@ from app.asr_flags import flag_asr_concerns
 from app.grounding import apply_grounding
 from app.models import Note, SpeakerTurn, TranscriptResult
 from app.negation_check import flag_negation_assertions
+from app.negation_llm import classify_assertion_needs
 from app.note_service import generate_note
+
+_LLM_FLAG_REASONS = frozenset({"denied_by_patient", "only_asked_not_confirmed"})
 
 _BACKEND = Path(__file__).resolve().parent.parent
 _FIXTURES_PATH = _BACKEND / "tests" / "eval" / "fixtures.json"
@@ -93,6 +97,13 @@ def evaluate_fixture(fixture: dict, *, generated: Note | None = None) -> dict:
             transcript.text,
             transcript.segments,
         )
+        probe_llm = classify_assertion_needs(
+            sections,
+            transcript.text,
+            transcript.segments,
+        )
+    else:
+        probe_llm = []
 
     grounding_sources: list[str] = []
     if probe and expected == "grounding":
@@ -104,8 +115,11 @@ def evaluate_fixture(fixture: dict, *, generated: Note | None = None) -> dict:
 
     caught = False
     caught_by: str | None = None
+    llm_flagged = any(item.reason in _LLM_FLAG_REASONS for item in probe_llm)
+    keyword_flagged = any(item.reason == "negation_or_question" for item in probe_negation)
+
     if role == "benign":
-        false_positive = bool(probe_negation)
+        false_positive = llm_flagged
         return {
             "id": fixture.get("id"),
             "role": role,
@@ -115,9 +129,14 @@ def evaluate_fixture(fixture: dict, *, generated: Note | None = None) -> dict:
             "should_flag": False,
             "caught": False,
             "false_positive": false_positive,
-            "caught_by": "negation_check" if false_positive else None,
+            "false_positive_old": keyword_flagged,
+            "false_positive_new": llm_flagged,
+            "caught_old": False,
+            "caught_new": False,
+            "caught_by": "negation_llm" if false_positive else None,
             "pipeline_verification_need_count": len(pipeline_negation),
             "probe_negation_flag_count": len(probe_negation),
+            "probe_llm_flag_count": len(probe_llm),
             "asr_flag_count": len(asr_flags),
             "asr_flag_reasons": [flag.reason for flag in asr_flags],
             "grounding_source_count": 0,
@@ -125,12 +144,12 @@ def evaluate_fixture(fixture: dict, *, generated: Note | None = None) -> dict:
         }
 
     if failure_type == "denied_symptom_outside_lexicon":
-        if any(item.reason == "negation_or_question" for item in probe_negation):
+        if llm_flagged:
+            caught = True
+            caught_by = "negation_llm"
+        elif keyword_flagged:
             caught = True
             caught_by = "negation_check"
-        elif any(item.reason == "negation_or_question" for item in pipeline_negation):
-            caught = True
-            caught_by = "negation_check_pipeline"
     elif failure_type == "garbled_drug_outside_list":
         if any(planted and planted in flag.text.lower() for flag in asr_flags):
             caught = True
@@ -158,9 +177,14 @@ def evaluate_fixture(fixture: dict, *, generated: Note | None = None) -> dict:
         "should_flag": True,
         "caught": caught,
         "false_positive": False,
+        "false_positive_old": False,
+        "false_positive_new": False,
+        "caught_old": keyword_flagged if failure_type == "denied_symptom_outside_lexicon" else caught,
+        "caught_new": llm_flagged if failure_type == "denied_symptom_outside_lexicon" else caught,
         "caught_by": caught_by,
         "pipeline_verification_need_count": len(pipeline_negation),
         "probe_negation_flag_count": len(probe_negation),
+        "probe_llm_flag_count": len(probe_llm),
         "asr_flag_count": len(asr_flags),
         "asr_flag_reasons": [flag.reason for flag in asr_flags],
         "grounding_source_count": len(grounding_sources),
@@ -194,6 +218,21 @@ def summarize(rows: list[dict]) -> dict:
             "false_positives": sum(1 for row in benign_m if row.get("false_positive")),
             "benign_total": len(benign_m),
         }
+    denied = [row for row in planted if row.get("failure_type") == "denied_symptom_outside_lexicon"]
+    comparison = {
+        "negation_check_keyword": {
+            "caught": sum(1 for row in denied if row.get("caught_old")),
+            "planted_total": len(denied),
+            "false_positives": sum(1 for row in benign if row.get("false_positive_old")),
+            "benign_total": len(benign),
+        },
+        "negation_llm": {
+            "caught": sum(1 for row in denied if row.get("caught_new")),
+            "planted_total": len(denied),
+            "false_positives": sum(1 for row in benign if row.get("false_positive_new")),
+            "benign_total": len(benign),
+        },
+    }
     return {
         "fixture_count": len(rows),
         "planted_count": len(planted),
@@ -202,6 +241,7 @@ def summarize(rows: list[dict]) -> dict:
         "false_positive_count": sum(1 for row in benign if row.get("false_positive")),
         "by_type": by_type,
         "by_mechanism": by_mechanism,
+        "comparison": comparison,
         "results": rows,
     }
 
@@ -217,6 +257,15 @@ def format_text_report(report: dict) -> str:
         "",
         "By mechanism:",
     ]
+    comparison = report.get("comparison") or {}
+    if comparison:
+        lines.append("Negation comparison (same denied + benign fixtures):")
+        for name, counts in comparison.items():
+            lines.append(
+                f"  {name}: {counts['caught']}/{counts['planted_total']} catches, "
+                f"{counts['false_positives']}/{counts['benign_total']} false positives"
+            )
+        lines.append("")
     for mechanism, counts in report["by_mechanism"].items():
         lines.append(
             f"  {mechanism}: {counts['caught']}/{counts['planted_total']} catches, "
@@ -286,12 +335,18 @@ def run_live_encounters(*, repeats: int = 2) -> list[dict]:
         transcript = load_encounter_transcript(script)
         asr_flags = flag_asr_concerns(transcript.segments)
         for run_index in range(1, repeats + 1):
+            started = time.perf_counter()
             note = generate_note(transcript)
+            note_s = time.perf_counter() - started
+            from app.negation_llm import last_classify_seconds
+
             findings.append(
                 {
                     "script": script,
                     "run": run_index,
                     "model": settings.ollama_model,
+                    "note_seconds": round(note_s, 2),
+                    "classify_seconds": last_classify_seconds(),
                     "verification_need_count": len(note.verification_needs),
                     "verification_reasons": [
                         item.reason for item in note.verification_needs

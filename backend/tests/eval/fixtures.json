@@ -154,5 +154,41 @@
       {"speaker": "patient", "text": "Breath is fine except when I talk too fast, like now."},
       {"speaker": "provider", "text": "I am not calling this a lung emergency today."}
     ]
+  },
+  {
+    "id": "denied_tinnitus",
+    "failure_type": "denied_symptom_outside_lexicon",
+    "expected_mechanism": "negation_llm",
+    "planted_token": "tinnitus",
+    "probe_assertion": "The patient has tinnitus in both ears.",
+    "turns": [
+      {"speaker": "provider", "text": "Any ringing in the ears? Tinnitus?"},
+      {"speaker": "patient", "text": "No tinnitus. Ears are quiet."},
+      {"speaker": "provider", "text": "This is a refill visit only."}
+    ]
+  },
+  {
+    "id": "denied_night_sweats",
+    "failure_type": "denied_symptom_outside_lexicon",
+    "expected_mechanism": "negation_llm",
+    "planted_token": "night sweats",
+    "probe_assertion": "The patient has night sweats.",
+    "turns": [
+      {"speaker": "provider", "text": "Night sweats?"},
+      {"speaker": "patient", "text": "I don't get night sweats. Sheets stay dry."},
+      {"speaker": "provider", "text": "Good. We will not chase that today."}
+    ]
+  },
+  {
+    "id": "denied_hematuria",
+    "failure_type": "denied_symptom_outside_lexicon",
+    "expected_mechanism": "negation_llm",
+    "planted_token": "hematuria",
+    "probe_assertion": "The patient has hematuria.",
+    "turns": [
+      {"speaker": "provider", "text": "Any blood in the urine? Hematuria?"},
+      {"speaker": "patient", "text": "No. I denied hematuria. Urine looks normal."},
+      {"speaker": "provider", "text": "We will leave that off the note."}
+    ]
   }
 ]

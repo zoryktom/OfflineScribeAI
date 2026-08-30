@@ -25,7 +25,7 @@ from app.models import (
     SuggestedIcd10,
     TranscriptResult,
 )
-from app.negation_check import flag_negation_assertions
+from app.negation_llm import ClassificationError, classify_assertion_needs
 from app.prompts import SOAP_NOTE_SYSTEM_PROMPT, SOAP_NOTE_USER_PROMPT
 
 
@@ -45,7 +45,7 @@ def generate_note(transcript: str | TranscriptResult) -> Note:
 
     if settings.stub_mode:
         note = _stub_note()
-        note.verification_needs = flag_negation_assertions(
+        note.verification_needs = classify_assertion_needs(
             {
                 "subjective": note.subjective,
                 "objective": note.objective,
@@ -241,16 +241,19 @@ def _note_from_model_payload(
             )
 
     source_text = original.text if isinstance(original, TranscriptResult) else original
-    verification_needs = flag_negation_assertions(
-        {
-            "subjective": sections["subjective"][0],
-            "objective": sections["objective"][0],
-            "assessment": sections["assessment"][0],
-            "plan": sections["plan"][0],
-        },
-        source_text,
-        segments,
-    )
+    try:
+        verification_needs = classify_assertion_needs(
+            {
+                "subjective": sections["subjective"][0],
+                "objective": sections["objective"][0],
+                "assessment": sections["assessment"][0],
+                "plan": sections["plan"][0],
+            },
+            source_text,
+            segments,
+        )
+    except ClassificationError as exc:
+        raise NoteGenerationError(str(exc)) from exc
 
     return Note(
         subjective=sections["subjective"][0],

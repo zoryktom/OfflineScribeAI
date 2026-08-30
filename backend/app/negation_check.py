@@ -32,6 +32,29 @@ _NEGATION = re.compile(
     re.IGNORECASE,
 )
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+_CLAIM = re.compile(
+    r"\b(has|have|had|reports|reported|complains|presents with|positive for|"
+    r"the patient)\b",
+    re.IGNORECASE,
+)
+
+
+def split_sentences(text: str) -> list[str]:
+    return [part.strip() for part in _SENTENCE_SPLIT.split(text) if part.strip()]
+
+
+def sentence_needs_classification(sentence: str) -> bool:
+    """Fast pre-filter. Does not decide asserted vs denied."""
+    cleaned = (sentence or "").strip()
+    if not cleaned or cleaned.lower() == "not documented in visit":
+        return False
+    if any(
+        _contains_phrase(cleaned, alias)
+        for _label, aliases in _SYMPTOMS
+        for alias in aliases
+    ):
+        return True
+    return bool(_CLAIM.search(cleaned))
 
 
 def flag_negation_assertions(
@@ -48,7 +71,7 @@ def flag_negation_assertions(
         text = (sections.get(section) or "").strip()
         if not text or text.lower() == "not documented in visit":
             continue
-        sentences = [part.strip() for part in _SENTENCE_SPLIT.split(text) if part.strip()]
+        sentences = split_sentences(text)
         for index, sentence in enumerate(sentences):
             if _sentence_is_negative(sentence):
                 continue

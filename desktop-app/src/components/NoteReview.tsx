@@ -5,10 +5,15 @@ import { DRAFT_BANNER } from "../api/client";
 import { DemoWatermark } from "./DemoWatermark";
 
 export const NEGATION_CHECK_REASON = "negation_or_question";
+export const NEGATION_LLM_REASONS = new Set([
+  "negation_or_question",
+  "denied_by_patient",
+  "only_asked_not_confirmed",
+]);
 export const NEGATION_CHECK_LABEL =
-  "Needs verification (experimental — unreliable)";
+  "Needs verification (false alarms remain)";
 export const NEGATION_DISCLOSURE_TEXT =
-  "This flag type has a high false-positive rate and low catch rate in current testing (see README). Treat it as a low-confidence hint, not a signal.";
+  "This check caught 6 of 6 denied-symptom probes in current testing and still flagged 2 of 4 benign caution lines. Treat it as a hint, not a complete signal.";
 export const NEGATION_DISCLOSURE_STORAGE_KEY =
   "offline-scribe-negation-disclosure-dismissed";
 
@@ -100,7 +105,7 @@ function SourceAttribution({ grounding }: { grounding?: GroundedSection }) {
 }
 
 function isNegationCheckFlag(item: VerificationNeed): boolean {
-  return item.reason === NEGATION_CHECK_REASON;
+  return NEGATION_LLM_REASONS.has(item.reason);
 }
 
 function sectionHasNegationCheck(

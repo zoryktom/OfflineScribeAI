@@ -1,7 +1,16 @@
 from app.models import SpeakerTurn, TranscriptResult
-from app.negation_check import flag_negation_assertions
+from app.negation_check import (
+    flag_negation_assertions,
+    sentence_needs_classification,
+)
 from app.note_service import generate_note
 from tests.ollama_fakes import patch_ollama
+
+
+def test_prefilter_includes_claim_language_outside_symptom_lexicon():
+    assert sentence_needs_classification("The patient has tinnitus in both ears.")
+    assert not sentence_needs_classification("Not documented in visit.")
+    assert not sentence_needs_classification("Follow up tomorrow.")
 
 
 def test_flag_asserted_fever_when_source_only_asked():
@@ -89,4 +98,7 @@ def test_generate_note_flags_but_does_not_rewrite_negation_error(ollama_mode, mo
         )
     )
     assert note.subjective == asserted
-    assert any(item.reason == "negation_or_question" for item in note.verification_needs)
+    assert any(
+        item.reason in {"denied_by_patient", "only_asked_not_confirmed"}
+        for item in note.verification_needs
+    )

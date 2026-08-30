@@ -187,6 +187,8 @@ Four **benign** fixtures were added later the same day (differential list langua
 
 **3/4** false positives on benign fixtures. Combined with the planted set: **2/8** caught, **3/4** false positives.
 
+That was the keyword-checker snapshot. A later same-day pass replaced the assertion *judgment* with a separate model call and re-measured. Those numbers are in [LLM assertion classifier](#llm-assertion-classifier-2026-08-30).
+
 ---
 
 ## Live `generate_note()` + flaggers (2026-08-30)
@@ -233,6 +235,36 @@ Full pipeline twice: `transcribe_audio()` (`faster-whisper` `small.en`, CPU, `in
 **Did `asr_flags` fire on real ASR output?** Yes, on **Adorvastatin** in both runs. It did **not** fire on **Lazino Pril** (the lisinopril miss). The note path then wrote both wrong strings into Assessment. The known “liz” text probe is a separate wiring check and is not this result.
 
 No lexicon or known-garble edits were made after this run.
+
+---
+
+## LLM assertion classifier (2026-08-30)
+
+Separate Ollama call after SOAP generation (`negation_llm.py`). Keyword `negation_check.py` remains as a pre-filter only. Live pass used `STUB_MODE=false`, `OLLAMA_MODEL=llama3:8b`.
+
+### Fixtures (same probes as the harness, plus three new out-of-lexicon denied tokens)
+
+| Mechanism | Catch (denied probes) | False positives (4 benign) |
+| --- | --- | --- |
+| Keyword `negation_check` | 0/6 | 3/4 |
+| LLM `negation_llm` | 6/6 | 2/4 |
+
+The two remaining live false positives were safety-net plan lines (fever; chest pain). Both differential lines were true negatives on this live pass. Probe classify wall times after warmup were about **5–6 s**; the first call was **35 s**.
+
+### Four encounter scripts × 2 (`generate_note` + classifier)
+
+| Script | Run | Note wall | Classify (inside that wall) | `verification_needs` |
+| --- | --- | --- | --- | --- |
+| Clinic visit | 1 | 220 s | 108 s | 2, plan, `only_asked_not_confirmed` |
+| Clinic visit | 2 | 174 s | 64 s | 3, plan, `only_asked_not_confirmed` |
+| HTN / diabetes | 1 | 190 s | 26 s | 0 |
+| HTN / diabetes | 2 | 72 s | 14 s | 0 |
+| Ankle sprain | 1 | 55 s | (no candidate / stale timer) | 0 |
+| Ankle sprain | 2 | 61 s | 15 s | 0 |
+| Ambiguous visit | 1 | 136 s | 43 s | 1, subjective, `denied_by_patient` |
+| Ambiguous visit | 2 | 95 s | 25 s | 2, subjective + plan |
+
+This is a small-sample measurement. It is not validation. Safety-net plan language still draws flags.
 
 ---
 

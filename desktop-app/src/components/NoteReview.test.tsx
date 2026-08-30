@@ -27,12 +27,12 @@ describe("NoteReview review gate", () => {
     ).toBeNull();
   });
 
-  it("labels negation_check flags as experimental and muted", () => {
+  it("labels assertion flags with the measured-reliability wording", () => {
     render(
       <NoteReview
         note={sampleNote({
           verification_needs: [
-            { section: "subjective", sentence_index: 0, reason: "negation_or_question" },
+            { section: "subjective", sentence_index: 0, reason: "denied_by_patient" },
           ],
         })}
         saving={false}
@@ -43,6 +43,7 @@ describe("NoteReview review gate", () => {
     expect(flag).toBeVisible();
     expect(flag).toHaveClass("verify-flag", "is-experimental");
     expect(screen.queryByText(/^Needs verification$/)).toBeNull();
+    expect(screen.queryByText(/experimental — unreliable/)).toBeNull();
   });
 
   it("does not apply the experimental label to grounding flags", () => {

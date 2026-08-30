@@ -309,11 +309,15 @@ Only issues that were actually observed.
 
 ### 7. Negation / question-as-assertion
 
-**What happened?** Ambiguous visit, temperature 0.2, run 2: Subjective claimed fever and SOB at rest. The transcript treats those as questions the patient did not confirm.
+**What happened?** The keyword checker in `negation_check.py` measured **0/3** catch on out-of-lexicon denied probes and **3/4** false positives on benign differential / safety-net fixtures — worse than not having the check.
 
-**What changed?** The system prompt now says never to assert a symptom that was only asked, denied, or left unconfirmed. After generation, `negation_check.py` flags (does not rewrite) assertive symptom sentences when every source mention is a question and/or negation. The UI marks those SOAP sections “Needs verification (experimental — unreliable)” after the measured 0/3 catch and 3/4 false-positive rates.
+**What changed?** Assertion status is now a **separate** local-model call (`negation_llm.py`) after SOAP generation. The old keyword list is only a pre-filter for whether to classify a sentence. Labels are ASSERTED_BY_PATIENT, DENIED_BY_PATIENT, ONLY_ASKED_NOT_CONFIRMED, or AMBIGUOUS. The classifier does not rewrite the note. STUB_MODE uses a deterministic stand-in so pytest does not need Ollama.
 
-**Resolved?** No. This is keyword heuristics, not NLI. Misses and false flags remain possible. The model can still write the bad sentence; a person has to catch it.
+**Live re-measure** (`llama3:8b`, same fixtures, `STUB_MODE=false`): keyword still **0/6** catch and **3/4** false positives; the new call was **6/6** catch and **2/4** false positives (both remaining FPs were safety-net plan lines). That is a small-sample measurement, not validation.
+
+**UI:** SOAP flags now read “Needs verification (false alarms remain)” — catch improved, false alarms did not go away.
+
+**Not claimed:** solved, resolved, or safe to trust. The model can still mis-label a sentence. The extra call added tens of seconds to about two minutes on this machine.
 
 ### 8. ICD-10 run-to-run instability (including a wrong-body-part code)
 
@@ -328,6 +332,8 @@ Only issues that were actually observed.
 ### 9. Latency
 
 **What happened?** `llama3.1:8b` ~0.09 tok/s and timeout; `llama3:8b` notes often 1–7 minutes on that Mac; ASR RTF ~0.26 for one file.
+
+**What changed?** A second Ollama call now classifies assertion status after the SOAP call. On this machine, that extra call was about **5–6 s** per fixture probe after warmup (first call **35 s**). On the four encounter scripts × 2, classify time sat inside the note wall clock and ranged **~14–108 s** (clinic first run 108 s; later HTN/ankle ~14–26 s). Note generation itself stayed in the **1–4 minute** range. The added call is not free.
 
 **Resolved?** Documented. Config default is still `llama3.1:8b`. Evaluation used `llama3:8b`. Not optimized.
 
@@ -371,7 +377,7 @@ Observed sequence:
 
 `SYNTHETIC DEMO — NOT A REAL PATIENT — NOT FOR CLINICAL USE`
 
-This is **not** a step toward clinical use. The measured miss and false-alarm numbers are unchanged. Turning demo mode on does not make drafts accurate enough for real patients or real workflows.
+This is **not** a step toward clinical use. Demo mode does not change the Measured Coverage numbers or make drafts accurate enough for real patients or real workflows.
 
 ```bash
 # backend/.env
@@ -380,7 +386,7 @@ STUB_MODE=true
 ALLOW_DEV_DEFAULTS=true
 ```
 
-Then start the API and desktop app as usual. The landing screen states the limit in plain language and shows the planted-error numbers (6 of 8 planted errors missed; 3 of 4 caution-flag false alarms) before any note is shown.
+Then start the API and desktop app as usual. The landing screen states the limit in plain language and shows the current planted-error numbers before any note is shown.
 
 ---
 
@@ -483,10 +489,10 @@ These caveats are unchanged in force. Hardening below **flags and blocks**, it d
 - **ASR** errors are common on clinical terms and still propagate into the draft. Unusual medication-like tokens and some low-confidence words are now **highlighted for review**; they are not corrected.
 - **No diarization**
 - **Grounding** is overlap heuristics, not semantic entailment
-- **Negation / question-as-assertion** is not solved. The prompt forbids asserting unconfirmed symptoms; a **heuristic post-check flags** some assertive sentences as experimental / low-confidence. It does not rewrite the note and is not NLI.
+- **Negation / question-as-assertion** is not solved. A separate local-model call now classifies some SOAP sentences; it still false-alarms on safety-net plan language (**2/4** on the live benign set) and can hallucinate. It does not rewrite the note.
 - **ICD-10** is a 42-code starter list + fuzzy match; `likely_diagnoses` can still map to the wrong body system. Lookup is deterministic **for an identical phrase list**; the model’s phrases are not. Codes stay unaccepted and labeled “AI-suggested, unverified.”
 - **LLM output is not deterministic** at temperature 0.2
-- **Latency** on CPU 8B models is minutes per note on the hardware used here
+- **Latency** on CPU 8B models is minutes per note on the hardware used here, plus a second assertion-classify call that measured **~14–108 s** on the four encounter scripts
 - **Live EHR write is off**; RPMS is unimplemented
 - **Named review is required** (`reviewer_id` + timestamp) before sync/export. A boolean is not enough. This is a process gate, not clinical sign-off.
 - **Retention purge** (`VISIT_RETENTION_DAYS`, default off) can delete old local visits. It is not a records-management program.
@@ -497,28 +503,28 @@ These caveats are unchanged in force. Hardening below **flags and blocks**, it d
 
 ### Measured coverage
 
-These numbers are from the planted-error harness (`make eval` / `python -m app.eval_harness`) on **8 planted** synthetic fixtures (errors the current checks should catch) and **4 benign** fixtures (differential / safety-net language they should not flag). They are a blind-spot measurement, not validation. The lexicons were not tuned to improve these numbers.
+These numbers are from the planted-error harness on **11 planted** synthetic fixtures and **4 benign** fixtures. The **negation comparison** below is a live `llama3:8b` pass (`STUB_MODE=false`) on the same probes. It is a small-sample measurement, not validation. Lexicons were not tuned to improve these numbers.
 
-The review UI presents `negation_check` flags as experimental / low-confidence (muted “Needs verification (experimental — unreliable)” label plus a one-time session disclosure) because of these numbers; `asr_flags` and grounding flags are not demoted.
+The review UI labels assertion flags “Needs verification (false alarms remain)” because catch improved and false alarms did not go away. `asr_flags` and grounding flags are not demoted.
 
 | Mechanism | Catch rate (planted) | False positives (benign) |
 | --- | --- | --- |
-| `negation_check` (denied rash / photophobia / palpitations vs differential / “call back if X” language) | **0/3** | **3/4** |
+| Keyword `negation_check` (old) | **0/6** | **3/4** |
+| LLM `negation_llm` (new, live) | **6/6** | **2/4** |
 | `asr_flags` (warfaren / levothyroxeen / gabapentn) | **0/3** | **0/0** (no benign ASR fixtures) |
 | Grounding (family-history miscite + dyspnea paraphrase) | **2/2** | **0/0** (no benign grounding fixtures) |
 
-**Overall: 2/8 planted errors caught, 3/4 false positives on benign fixtures.**
+**Overall planted (live fixture pass): 8/11 caught. Benign false positives for the new assertion check: 2/4** (both safety-net plan lines). Keyword catch on the same denied set stayed **0/6**. The new call is better on catch and only slightly better on false positives. That is not a claim the problem is gone. The CI stub stand-in for the classifier is **6/6** catch and **3/4** false positives — use the live row above, not the stub, as the comparison.
 
 | Failure type | Caught | False positives | Notes |
 | --- | --- | --- | --- |
-| Denied/questioned symptom outside `negation_check.py` | **0/3** | — | Probe notes asserted rash, photophobia, or palpitations; no flag. |
-| Garbled drug name outside `medication_starter.txt` and the known-garble map | **0/3** | — | `asr_flags` did not flag warfaren, levothyroxeen, or gabapentn. |
-| Family-history statement that could be miscited to Assessment | **1/1** | — | Grounding did not attach the mother’s stroke span to a probe Assessment about acute stroke. |
-| Paraphrase of a real symptom (“can’t catch my breath” vs “shortness of breath”) | **1/1** | — | Overlap matching linked the paraphrase on this fixture. |
-| Benign differential (mild viral cough; “rather than shortness of breath”) | — | **2/2** | Same class of language that spuriously fired on the live ambiguous visit. |
-| Benign safety-net (“return if fever…”; “chest pain that does not stop”) | — | **1/2** | Fever plan line flagged; chest-pain safety-net did not on this wording. |
+| Denied symptom (rash, photophobia, palpitations + tinnitus, night sweats, hematuria) | **6/6** new / **0/6** old | — | Live classifier flagged all six probes. Keyword checker flagged none. |
+| Garbled drug name outside `medication_starter.txt` | **0/3** | — | Unchanged. |
+| Family-history miscite / dyspnea paraphrase | **2/2** | — | Unchanged grounding fixtures. |
+| Benign differential | — | **0/2** new / **2/2** old | Live classifier did not flag the two differential lines. |
+| Benign safety-net | — | **2/2** new / **1/2** old | Both “return if fever / chest pain” plan lines still flagged. |
 
-Live `generate_note()` on **written** encounter scripts (`llama3:8b`, four scripts × 2): `verification_needs` fired on the ambiguous visit only (**2** then **1** flags). Those flags were on a “mild viral cough” differential and a plan warning that mentioned chest pain — **spurious** relative to the historical fever/SOB assertion. `asr_flags` was **0/8** on correctly spelled script text.
+Live `generate_note()` plus the new classifier on **written** encounter scripts (`llama3:8b`, four scripts × 2): note wall times stayed in the **1–4 minute** range; the extra classify call was **~14–108 s** (clinic first run 108 s). Clinic plan lines were flagged `only_asked_not_confirmed`. Ambiguous-visit runs flagged subjective (`denied_by_patient`) and once a plan line. HTN and ankle runs were 0 flags on this pass. `asr_flags` was **0/8** on correctly spelled script text. Full table: [docs/evaluation.md](docs/evaluation.md).
 
 Live ASR on a **slurred-medication TTS clip** (`faster-whisper` `small.en`, `STUB_MODE=false`, two full pipeline runs): intended names were lisinopril and atorvastatin. Whisper wrote **“Lazino Pril”** and **“Adorvastatin”**. `asr_flags` fired on **Adorvastatin** both times (`unusual_medication_token`) and did **not** fire on **Lazino Pril**. The SOAP Assessment copied both garbled strings. This is not the old hand-typed “liz” probe. Full tables: [docs/evaluation.md](docs/evaluation.md).
 
@@ -533,7 +539,7 @@ cd backend && python -m app.eval_harness
 
 ## Current state
 
-This tool is for **supervised drafting on synthetic or de-identified data only**. A named reviewer id is required before sync or export. It is **not** safe for unsupervised use, real patients, or treating `verification_needs` / `asr_flags` as complete. The measured catch rate is **2/8** planted errors and the negation heuristic produced **3/4** false positives on benign differential and safety-net fixtures. This is a supervised internal pilot on synthetic/de-identified data only.
+This tool is for **supervised drafting on synthetic or de-identified data only**. A named reviewer id is required before sync or export. It is **not** safe for unsupervised use, real patients, or treating `verification_needs` / `asr_flags` as complete. Live fixture measurement: assertion-check catch **6/6** denied probes, **2/4** false positives on benign caution language; overall planted **8/11**. This is a supervised internal pilot on synthetic/de-identified data only.
 
 ---
 
@@ -573,7 +579,7 @@ These are **not implemented**:
 
 - Embedding or NLI-based grounding
 - Stronger medical ASR / recovery of drug names (current flags do not correct tokens)
-- **NLI / entailment-quality negation** (and question-scope) — identified next step. The keyword heuristic caught **0/3** out-of-lexicon denied-symptom probes and produced **3/4** false positives on benign differential / safety-net fixtures, for an overall planted catch of **2/8**. An LLM-based negation classifier is a larger design change with its own eval plan; it was not added in this pass.
+- **Safety-net and question-scope assertion errors after the LLM classifier.** Live re-measure: **6/6** denied-probe catch vs **0/6** for the old keyword check, and **2/4** false positives (both “call back if X” plan lines) vs **3/4**. Small sample. The extra model call cost **~5–108 s** on this machine. Not treated as closed.
 - Constraining `likely_diagnoses` to phrases attested in Assessment (or dropping auto-codes)
 - Full ICD-10-CM and coder workflow
 - Larger labeled evaluation sets and inter-run statistics
