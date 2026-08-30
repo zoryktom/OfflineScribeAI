@@ -350,6 +350,39 @@ select {
   color: #7a5a20;
 }
 
+.verify-flag.is-experimental {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.negation-disclosure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: #f3f1ec;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+
+.negation-disclosure p {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+
+.negation-disclosure-dismiss {
+  padding: 0.35rem 0.7rem;
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+
 .asr-flag {
   margin: 0.35rem 0 0;
   font-weight: 600;

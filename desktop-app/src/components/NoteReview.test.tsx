@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { DRAFT_BANNER } from "../api/client";
 import { sampleNote } from "../test/sampleNote";
-import { NoteReview } from "./NoteReview";
+import {
+  NEGATION_CHECK_LABEL,
+  NEGATION_DISCLOSURE_TEXT,
+  NoteReview,
+} from "./NoteReview";
 
 async function goToLastStep(user: ReturnType<typeof userEvent.setup>) {
   for (let index = 0; index < 5; index += 1) {
@@ -23,7 +27,7 @@ describe("NoteReview review gate", () => {
     ).toBeNull();
   });
 
-  it("shows needs-verification when a SOAP section is flagged", () => {
+  it("labels negation_check flags as experimental and muted", () => {
     render(
       <NoteReview
         note={sampleNote({
@@ -35,7 +39,47 @@ describe("NoteReview review gate", () => {
         onSave={vi.fn()}
       />,
     );
-    expect(screen.getByText("Needs verification")).toBeVisible();
+    const flag = screen.getByText(NEGATION_CHECK_LABEL);
+    expect(flag).toBeVisible();
+    expect(flag).toHaveClass("verify-flag", "is-experimental");
+    expect(screen.queryByText(/^Needs verification$/)).toBeNull();
+  });
+
+  it("does not apply the experimental label to grounding flags", () => {
+    render(
+      <NoteReview
+        note={sampleNote({
+          subjective_grounding: { sources: [], directly_stated: false },
+        })}
+        saving={false}
+        onSave={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Sources unclear")).toBeVisible();
+    expect(screen.queryByText(NEGATION_CHECK_LABEL)).toBeNull();
+    expect(screen.queryByText(NEGATION_DISCLOSURE_TEXT)).toBeNull();
+    expect(document.querySelector(".verify-flag")).toBeNull();
+  });
+
+  it("shows the negation disclosure once and hides it after dismiss", async () => {
+    const user = userEvent.setup();
+    const flagged = sampleNote({
+      verification_needs: [
+        { section: "subjective", sentence_index: 0, reason: "negation_or_question" },
+      ],
+    });
+    const { unmount } = render(
+      <NoteReview note={flagged} saving={false} onSave={vi.fn()} />,
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(NEGATION_DISCLOSURE_TEXT);
+    await user.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(DRAFT_BANNER);
+
+    unmount();
+    render(<NoteReview note={flagged} saving={false} onSave={vi.fn()} />);
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(screen.getByText(NEGATION_CHECK_LABEL)).toBeVisible();
   });
 
   it("keeps Save disabled until a reviewer id is entered", async () => {

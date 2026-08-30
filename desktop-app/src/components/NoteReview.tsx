@@ -3,6 +3,14 @@ import { useMemo, useState } from "react";
 import type { GroundedSection, Note, ReviewAction, VerificationNeed } from "../api/client";
 import { DRAFT_BANNER } from "../api/client";
 
+export const NEGATION_CHECK_REASON = "negation_or_question";
+export const NEGATION_CHECK_LABEL =
+  "Needs verification (experimental — unreliable)";
+export const NEGATION_DISCLOSURE_TEXT =
+  "This flag type has a high false-positive rate and low catch rate in current testing (see README). Treat it as a low-confidence hint, not a signal.";
+export const NEGATION_DISCLOSURE_STORAGE_KEY =
+  "offline-scribe-negation-disclosure-dismissed";
+
 const SECTIONS = [
   "subjective",
   "objective",
@@ -90,8 +98,37 @@ function SourceAttribution({ grounding }: { grounding?: GroundedSection }) {
   );
 }
 
-function needsVerification(flags: VerificationNeed[] | undefined, section: string): boolean {
-  return (flags ?? []).some((item) => item.section === section);
+function isNegationCheckFlag(item: VerificationNeed): boolean {
+  return item.reason === NEGATION_CHECK_REASON;
+}
+
+function sectionHasNegationCheck(
+  flags: VerificationNeed[] | undefined,
+  section: string,
+): boolean {
+  return (flags ?? []).some(
+    (item) => item.section === section && isNegationCheckFlag(item),
+  );
+}
+
+function visitHasNegationCheck(flags: VerificationNeed[] | undefined): boolean {
+  return (flags ?? []).some(isNegationCheckFlag);
+}
+
+function negationDisclosureAlreadyDismissed(): boolean {
+  try {
+    return sessionStorage.getItem(NEGATION_DISCLOSURE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistNegationDisclosureDismissed(): void {
+  try {
+    sessionStorage.setItem(NEGATION_DISCLOSURE_STORAGE_KEY, "1");
+  } catch {
+    // Private-mode or missing storage must not break review.
+  }
 }
 
 type Props = {
@@ -105,6 +142,11 @@ export function NoteReview({ note, saving, onSave }: Props) {
   const [step, setStep] = useState(0);
   const [reviewerId, setReviewerId] = useState("");
   const [actions, setActions] = useState<ReviewAction[]>([]);
+  const [showNegationDisclosure, setShowNegationDisclosure] = useState(
+    () =>
+      visitHasNegationCheck(note.verification_needs) &&
+      !negationDisclosureAlreadyDismissed(),
+  );
 
   const section = SECTIONS[step];
   const isLast = step === SECTIONS.length - 1;
@@ -145,6 +187,21 @@ export function NoteReview({ note, saving, onSave }: Props) {
       <p className="draft-banner" role="status">
         {DRAFT_BANNER}
       </p>
+      {showNegationDisclosure ? (
+        <div className="negation-disclosure" role="note">
+          <p>{NEGATION_DISCLOSURE_TEXT}</p>
+          <button
+            type="button"
+            className="btn btn-secondary negation-disclosure-dismiss"
+            onClick={() => {
+              persistNegationDisclosureDismissed();
+              setShowNegationDisclosure(false);
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
       <p className="section-label">SOAP note</p>
       <h2 id="note-heading" className="note-heading">
         Review this note
@@ -155,8 +212,8 @@ export function NoteReview({ note, saving, onSave }: Props) {
         {HINTS[section]}
       </p>
 
-      {isSoap && needsVerification(draft.verification_needs, soapSection) ? (
-        <p className="verify-flag">Needs verification</p>
+      {isSoap && sectionHasNegationCheck(draft.verification_needs, soapSection) ? (
+        <p className="verify-flag is-experimental">{NEGATION_CHECK_LABEL}</p>
       ) : null}
 
       {isSoap ? (

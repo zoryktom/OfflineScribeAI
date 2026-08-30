@@ -28,5 +28,8 @@ describe("TranscriptView ASR flags", () => {
     );
     expect(screen.getByText(/Check “liz”/)).toBeVisible();
     expect(screen.getByText(/unusual medication token/)).toBeVisible();
+    expect(screen.queryByText(/experimental — unreliable/)).toBeNull();
+    expect(document.querySelector(".verify-flag")).toBeNull();
+    expect(document.querySelector(".is-experimental")).toBeNull();
   });
 });

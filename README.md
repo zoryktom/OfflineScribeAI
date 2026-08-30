@@ -310,7 +310,7 @@ Only issues that were actually observed.
 
 **What happened?** Ambiguous visit, temperature 0.2, run 2: Subjective claimed fever and SOB at rest. The transcript treats those as questions the patient did not confirm.
 
-**What changed?** The system prompt now says never to assert a symptom that was only asked, denied, or left unconfirmed. After generation, `negation_check.py` flags (does not rewrite) assertive symptom sentences when every source mention is a question and/or negation. The UI marks those SOAP sections “Needs verification.”
+**What changed?** The system prompt now says never to assert a symptom that was only asked, denied, or left unconfirmed. After generation, `negation_check.py` flags (does not rewrite) assertive symptom sentences when every source mention is a question and/or negation. The UI marks those SOAP sections “Needs verification (experimental — unreliable)” after the measured 0/3 catch and 3/4 false-positive rates.
 
 **Resolved?** No. This is keyword heuristics, not NLI. Misses and false flags remain possible. The model can still write the bad sentence; a person has to catch it.
 
@@ -463,7 +463,7 @@ These caveats are unchanged in force. Hardening below **flags and blocks**, it d
 - **ASR** errors are common on clinical terms and still propagate into the draft. Unusual medication-like tokens and some low-confidence words are now **highlighted for review**; they are not corrected.
 - **No diarization**
 - **Grounding** is overlap heuristics, not semantic entailment
-- **Negation / question-as-assertion** is not solved. The prompt forbids asserting unconfirmed symptoms; a **heuristic post-check flags** some assertive sentences for “Needs verification.” It does not rewrite the note and is not NLI.
+- **Negation / question-as-assertion** is not solved. The prompt forbids asserting unconfirmed symptoms; a **heuristic post-check flags** some assertive sentences as experimental / low-confidence. It does not rewrite the note and is not NLI.
 - **ICD-10** is a 42-code starter list + fuzzy match; `likely_diagnoses` can still map to the wrong body system. Lookup is deterministic **for an identical phrase list**; the model’s phrases are not. Codes stay unaccepted and labeled “AI-suggested, unverified.”
 - **LLM output is not deterministic** at temperature 0.2
 - **Latency** on CPU 8B models is minutes per note on the hardware used here
@@ -478,6 +478,8 @@ These caveats are unchanged in force. Hardening below **flags and blocks**, it d
 ### Measured coverage
 
 These numbers are from the planted-error harness (`make eval` / `python -m app.eval_harness`) on **8 planted** synthetic fixtures (errors the current checks should catch) and **4 benign** fixtures (differential / safety-net language they should not flag). They are a blind-spot measurement, not validation. The lexicons were not tuned to improve these numbers.
+
+The review UI presents `negation_check` flags as experimental / low-confidence (muted “Needs verification (experimental — unreliable)” label plus a one-time session disclosure) because of these numbers; `asr_flags` and grounding flags are not demoted.
 
 | Mechanism | Catch rate (planted) | False positives (benign) |
 | --- | --- | --- |
