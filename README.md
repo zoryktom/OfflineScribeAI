@@ -539,7 +539,7 @@ cd backend && python -m app.eval_harness
 
 ## Current state
 
-This tool is for **supervised drafting on synthetic or de-identified data only**. A named reviewer id is required before sync or export. It is **not** safe for unsupervised use, real patients, or treating `verification_needs` / `asr_flags` as complete. Live fixture measurement: assertion-check catch **6/6** denied probes, **2/4** false positives on benign caution language; overall planted **8/11**. This is a supervised internal pilot on synthetic/de-identified data only.
+This remains a supervised internal pilot on synthetic or de-identified data only — not clinical use. A draft can be flagged for unusual ASR medication-like tokens (`asr_flags`), assertion-status hints from a separate local-model call (`negation_llm`; UI label “Needs verification (false alarms remain)”), and grounding uncertainty when a SOAP section cannot be linked to transcript spans. `DEMO_MODE` is a permanently limited synthetic explorer (preloaded scripts only, no audio upload, no sync or FHIR dry-run, `DEMO-` ids, isolated store, non-removable watermark) and is not a path to real patients. Best current measurements on the live fixture pass (`llama3:8b`, small sample): keyword negation **0/6** catch and **3/4** false positives; LLM assertion check **6/6** catch and **2/4** false positives; `asr_flags` **0/3** planted garbles; grounding **2/2** on the two planted fixtures; overall planted **8/11**. A named reviewer id is required before sync or export. Do not treat these flags as complete.
 
 ---
 
