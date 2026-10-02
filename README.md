@@ -4,7 +4,7 @@ Offline Scribe is a local-first clinical AI documentation prototype that convert
 
 It is a **research and engineering prototype**, not a clinical product. It is not FDA-cleared, not clinically validated, and not a diagnosis or coding system. Notes are drafts for a human reviewer. Evaluation used **synthetic / mock** dialogues and TTS audio, not real patients.
 
-**Author:** Zorykto Mykola. This is a personal project: I defined the problem, architecture, evaluation, and the reliability work below. AI coding assistants were used as development tools. They are not authors, owners, or contributors.
+**Author:** Zorykto Mykola. This is a personal project. I defined the problem, architecture, evaluation, and the reliability work below. There are no other authors.
 
 The API binds to `127.0.0.1` only. Visit audio and notes are not sent to a cloud model at inference time. Live FHIR POST to Oracle Health is **disabled**; dry-run JSON can be printed locally.
 
@@ -34,20 +34,21 @@ Detailed run tables: [docs/evaluation.md](docs/evaluation.md).
 
 ## Research / engineering motivation
 
-The interesting question is not “can an LLM emit SOAP-shaped text?” It can. The question this project is built around is:
+Clinical documentation is not just text generation. It is **people, organizations, and technology** meeting in a workflow: who does the review, what coordination happens after the visit, and what review work remains when a fluent draft looks finished.
 
-**How can a documentation system produce structured clinical notes that a person can actually review—tied to source speech, testable when prompts or models change, and honest when the model is guessing?**
+The interesting question is not “can an LLM emit SOAP-shaped text?” It can. This project is built around:
 
-That question pushed the work away from a single generate-and-trust demo and toward:
+**What documentation work still has to be done by a person after a model drafts the note—and how do we make that work visible, named, and measurable instead of hiding it behind a generate-and-trust demo?**
+
+That is a workflow and coordination question as much as a model question. It pushed the implementation toward:
 
 - **Source grounding** — attach timestamped transcript spans to SOAP sections, or mark the section when a link is not confident
 - **Hallucination checks** — prompt constraints plus regression tests for a known fabricated claim (“well controlled” on medications that were never described that way)
 - **Reference-based coding** — the model names a diagnosis in plain language; a local CMS-derived starter file supplies codes, or returns unmatched
-- **Human review** — the UI is a review/edit loop; sync is skipped until a named provider id + timestamp is recorded and FHIR chart ids exist
+- **Human review as part of the workflow** — the UI is a review/edit loop; sync is skipped until a named provider id + timestamp is recorded and FHIR chart ids exist
 - **Failure-mode analysis** — grounding wipes, wrong citations, ASR error propagation, negation errors, ICD instability, run-to-run variance
 - **Reproducibility** — pinned Python 3.12, `.env.example`, pytest with Ollama mocked, documented hardware-specific timings that are *not* treated as general performance
 
-This is applied AI engineering with an evaluation loop. It is **not** claimed as a novel research contribution or a publication-level result.
 
 ---
 
@@ -569,7 +570,7 @@ If you run this on a machine that later holds real visits, treat the SQLCipher f
 - **A small reference file is safer than trusting model-recalled codes**, and still unsafe if the input phrase is wrong.
 - **Regression tests matter** because prompt and grounding changes reintroduce old bugs (wipes, J40.0, fabrication).
 - **The useful write-up is often the failure**, not the demo screenshot.
-- **Human review is part of the architecture**, not an apology: named `provider_review`, skipped sync, accept/reject codes, section audit rows.
+- **Human review is part of the workflow**, not an apology: named `provider_review`, skipped sync, accept/reject codes, section audit rows. A finished-looking draft can still hide coordination and checking work.
 
 ---
 

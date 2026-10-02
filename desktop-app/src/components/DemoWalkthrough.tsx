@@ -1,19 +1,23 @@
+import { DEMO_COVERAGE_BLURB } from "./DemoLanding";
+
 const STEPS = [
   {
     title: "The conversation",
-    body: "This is a written fake conversation used as the recording. In real use you would check whether the speech model heard medication names and symptoms correctly. Wrong words here get copied into the draft.",
+    body: "This is a written fake conversation used as the recording. In a real workflow you would check whether the speech model heard medication names and symptoms correctly. Wrong words here get copied into the draft and become invisible later if nobody looks.",
   },
   {
     title: "The AI draft",
-    body: "This is the SOAP draft the model wrote from that conversation. Check every sentence against the transcript. The model can invent details that were never said.",
+    body: "This is the SOAP draft the model wrote from that conversation. Checking every sentence against the transcript is the coordination work the system does not do for you. The model can invent details that were never said.",
   },
   {
     title: "Flags",
-    body: "Highlighted transcript words and “Needs verification” labels are hints, not a complete check. In testing, planted errors were often missed and some caution flags were false alarms.",
+    body:
+      "Highlighted transcript words and “Needs verification (false alarms remain)” labels are hints, not a complete check. " +
+      DEMO_COVERAGE_BLURB,
   },
   {
     title: "Named review",
-    body: "Save stays blocked until a reviewer types an id. That is a process gate so a draft cannot be treated as finished without a name. It does not mean the note is correct.",
+    body: "Save stays blocked until a reviewer types an id. That keeps the review work visible and named instead of letting a draft look finished on its own. It does not mean the note is correct.",
   },
 ] as const;
 

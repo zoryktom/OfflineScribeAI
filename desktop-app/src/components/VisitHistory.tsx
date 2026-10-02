@@ -1,10 +1,13 @@
 import type { Visit } from "../api/client";
 import { SyncStatusBadge } from "./SyncStatusBadge";
 
+export const DEMO_SYNC_DISABLED = "Sync is disabled in demo mode";
+
 type Props = {
   visits: Visit[];
   selectedId: string | null;
   onSelect: (visit: Visit) => void;
+  demoMode?: boolean;
 };
 
 function formatWhen(timestamp: string): string {
@@ -20,7 +23,12 @@ function formatWhen(timestamp: string): string {
   });
 }
 
-export function VisitHistory({ visits, selectedId, onSelect }: Props) {
+export function VisitHistory({
+  visits,
+  selectedId,
+  onSelect,
+  demoMode = false,
+}: Props) {
   return (
     <section className="panel" aria-labelledby="history-heading">
       <p className="section-label">On this computer</p>
@@ -50,12 +58,16 @@ export function VisitHistory({ visits, selectedId, onSelect }: Props) {
                         : "Draft"}
                   </span>
                 </span>
-                <SyncStatusBadge
-                  status={visit.sync_status}
-                  lastSyncError={visit.last_sync_error}
-                  fhirPatientId={visit.fhir_patient_id}
-                  fhirEncounterId={visit.fhir_encounter_id}
-                />
+                {demoMode ? (
+                  <span className="caption">{DEMO_SYNC_DISABLED}</span>
+                ) : (
+                  <SyncStatusBadge
+                    status={visit.sync_status}
+                    lastSyncError={visit.last_sync_error}
+                    fhirPatientId={visit.fhir_patient_id}
+                    fhirEncounterId={visit.fhir_encounter_id}
+                  />
+                )}
               </button>
             </li>
           ))}

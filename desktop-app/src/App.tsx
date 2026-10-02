@@ -21,7 +21,9 @@ import { NoteReview } from "./components/NoteReview";
 import { RecordOrUpload } from "./components/RecordOrUpload";
 import { SyncStatusBadge } from "./components/SyncStatusBadge";
 import { TranscriptView } from "./components/TranscriptView";
-import { VisitHistory } from "./components/VisitHistory";
+import { DEMO_SYNC_DISABLED, VisitHistory } from "./components/VisitHistory";
+
+export const CONFIG_CHECK_LABEL = "Checking configuration…";
 
 const WALKTHROUGH_SCRIPT = "synthetic_clinic_visit_dialogue.txt";
 
@@ -36,7 +38,9 @@ export default function App() {
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [startedDemo, setStartedDemo] = useState(false);
 
+  const healthReady = health !== null;
   const demoMode = health?.demo_mode === true;
+  const showRealTools = health?.demo_mode === false;
   const watermark = demoMode ? DEMO_WATERMARK : null;
 
   const refresh = useCallback(async () => {
@@ -153,16 +157,22 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <p className="app-kicker">
-          {demoMode ? "Synthetic demo only" : "Rural clinic workstation"}
+          {!healthReady
+            ? CONFIG_CHECK_LABEL
+            : demoMode
+              ? "Synthetic demo only"
+              : "Workflow review workstation"}
         </p>
         <h1>Offline Scribe</h1>
         {demoMode ? <DemoWatermark /> : null}
-        <p className="app-lede">
-          {demoMode
-            ? "A locked-down look at how a draft note is produced from a fake conversation."
-            : "Record a visit, review the SOAP note, and keep it on this computer until you choose to sync."}
-        </p>
-        {health?.stub_mode && !demoMode ? (
+        {healthReady ? (
+          <p className="app-lede">
+            {demoMode
+              ? "A locked-down look at the documentation workflow on a fake conversation: draft, flags, and named review."
+              : "Record a visit, do the review work the draft cannot, and keep it on this computer until you choose to sync."}
+          </p>
+        ) : null}
+        {health?.stub_mode && showRealTools ? (
           <p className="stub-note">
             STUB_MODE is on: SOAP notes are canned sample text so the app can
             run without Ollama. Transcription still uses on-device faster-whisper.
@@ -178,6 +188,12 @@ export default function App() {
       ) : null}
       {message ? <p className="banner">{message}</p> : null}
 
+      {!healthReady && !error ? (
+        <p className="caption" role="status">
+          {CONFIG_CHECK_LABEL}
+        </p>
+      ) : null}
+
       {demoMode && !startedDemo ? (
         <DemoLanding onStart={() => void handleStartDemo()} starting={busy} />
       ) : null}
@@ -189,7 +205,7 @@ export default function App() {
         />
       ) : null}
 
-      {!demoMode ? <RecordOrUpload busy={busy} onSubmit={handleUpload} /> : null}
+      {showRealTools ? <RecordOrUpload busy={busy} onSubmit={handleUpload} /> : null}
 
       {selected && (!demoMode || startedDemo) ? (
         <>
@@ -197,7 +213,7 @@ export default function App() {
             <p className="section-label">This visit</p>
             {watermark ? <DemoWatermark /> : null}
             <p className="caption">{selected.id}</p>
-            {!demoMode ? (
+            {showRealTools ? (
               <SyncStatusBadge
                 status={selected.sync_status}
                 lastSyncError={selected.last_sync_error}
@@ -205,7 +221,7 @@ export default function App() {
                 fhirEncounterId={selected.fhir_encounter_id}
               />
             ) : (
-              <p className="caption">Chart sync is unavailable in demo mode.</p>
+              <p className="caption">{DEMO_SYNC_DISABLED}</p>
             )}
             {selected.review_summary ? (
               <p className="caption review-summary">{selected.review_summary}</p>
@@ -241,11 +257,12 @@ export default function App() {
         </>
       ) : null}
 
-      {!demoMode || startedDemo ? (
+      {healthReady && (!demoMode || startedDemo) ? (
         <VisitHistory
           visits={visits}
           selectedId={selected?.id ?? null}
           onSelect={setSelected}
+          demoMode={demoMode}
         />
       ) : null}
 
@@ -253,14 +270,14 @@ export default function App() {
         <p className="caption">
           Chart preview and FHIR dry-run are unavailable in demo mode.
         </p>
-      ) : (
+      ) : showRealTools ? (
         <p className="caption">
           EHR sync is opt-in.{" "}
           <button type="button" className="btn btn-secondary" onClick={() => void handleDryRun()}>
             Preview FHIR JSON (dry-run)
           </button>
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
