@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200">
+  <rect width="720" height="200" fill="#f7f7f5"/>
+  <text x="20" y="28" font-family="Helvetica" font-size="14">Error taxonomy (research prototype)</text>
+  <text x="20" y="60" font-family="Helvetica" font-size="12">supported by transcript?</text>
+  <text x="40" y="90" font-family="Helvetica" font-size="12">no ’ hallucination</text>
+  <text x="40" y="115" font-family="Helvetica" font-size="12">yes, contradicts ’ negation / laterality / dose / medication / temporality</text>
+  <text x="40" y="140" font-family="Helvetica" font-size="12">yes, missing fact ’ omission</text>
+  <text x="40" y="165" font-family="Helvetica" font-size="12">else ’ style_only</text>
+</svg>

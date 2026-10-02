@@ -41,6 +41,7 @@ The evaluation package lives in `src/offlinescribe/`. The interactive FastAPI/Re
 - Annotation: [`docs/annotation_guide.md`](docs/annotation_guide.md)
 - Schema: [`data/schemas/annotation.schema.json`](data/schemas/annotation.schema.json)
 - Limitations: [`docs/limitations.md`](docs/limitations.md)
+- Methods spec: [`docs/SPEC.md`](docs/SPEC.md)
 
 Human dual annotation, adjudication, and κ ≥ 0.6 on major/critical categories are **not** in this tree yet.
 
