@@ -1,6 +1,8 @@
 # Study design
 
-Unit of analysis: **encounter** (transcript → note). One row in `data/synthetic/manifest.jsonl` is one encounter.
+## Unit of analysis
+
+Encounter (transcript → note). One row in `data/synthetic/manifest.jsonl` is one encounter.
 
 ## Conditions
 
@@ -59,7 +61,11 @@ The committed `A1` / `A2` / `ADJ` files are **programmatic seed labels** from pl
 - **H2:** Pearson / Spearman correlation of encounter WER with negation-flip and medication error rates.
 - **H4:** Regression of edit time on omission count vs hallucination count, reviewer random intercept.
 - **Multiplicity:** Holm–Bonferroni on the pre-specified family (H1–H4 plus the four condition pairwise tests on clinical_error_score).
-- **Uncertainty:** percentile bootstrap 95% CIs (`src/offlinescribe/eval/stats.py`).
+- **Uncertainty:** percentile bootstrap 95% CIs, 10,000 resamples in analysis notebooks (`src/offlinescribe/eval/stats.py`). The CI sample runner uses 400 resamples so tests finish quickly.
+
+## Pre-registration
+
+Freeze this document before a live-model ablation. Tag that commit `prereg-v1`. The committed stub runner is not a pre-registered result.
 
 ## What the stub runner does
 

@@ -12,18 +12,28 @@ Use with `docs/error_taxonomy.md` and `offlinescribe annotate`.
 6. Save. The CLI appends `data/annotations/{annotator}.jsonl` and skips duplicates for the same encounter + condition + annotator.
 
 ```bash
-offlinescribe annotate --encounter E001 --condition rag_grounded --annotator A1
+offlinescribe annotate --encounter E001 --condition rag_grounded --annotator A1 --output data/annotations/A1.jsonl
 ```
 
 Resume is automatic. Already-written triples are skipped.
 
+Keys in the interactive path: `o` omission, `h` hallucination, `n` negation_flip, `l` laterality, `m` medication, `d` dose, `t` temporality, `a` attribution, `i` icd_instability, `p` asr_propagation, `s` style_only, `q` quit.
+
 ## Decision tree
 
-1. Is the span clinically the same as gold? → no label, or `style_only` if wording changed.
-2. Is a required gold fact missing? → `omission` (or `dose` if only the dose is missing).
-3. Is a new fact present? → `hallucination` unless it is a flipped denial (`negation_flip`) or a wrong side/drug/dose.
-4. Did ASR text leak? → add `asr_propagation` only when you have an ASR hypothesis distinct from the gold transcript.
-5. Did the ICD table move across seeds? → `icd_instability`.
+```
+Is the generated text supported by the transcript?
+├── No → HALLUCINATION
+│   └── Is it clinically significant? → set severity
+└── Yes → Does it contradict the transcript?
+    ├── Yes → is it a negation, laterality, dose, med, or temporality?
+    │         → corresponding error type
+    └── No → Is anything clinically relevant missing?
+        ├── Yes → OMISSION
+        └── No → STYLE_ONLY or None
+```
+
+If ASR text leaked from a hypothesis distinct from the gold transcript, label `asr_propagation`. If ICD codes move across seeds, label `icd_instability`.
 
 ## Tie-breaking
 

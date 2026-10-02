@@ -4,27 +4,34 @@ Span-level labels for an AI-drafted SOAP note against a transcript and a gold no
 
 ## Severity rubric
 
-- **Critical:** could cause harm if signed as written (wrong medication, wrong dose, missed allergy, flipped denial of a dangerous symptom).
-- **Major:** would change a clinical decision or a billable code if left in place.
-- **Moderate:** a clinician must edit before signing; decision-making is not clearly changed.
-- **Minor:** wording, order, or tone; no clinical impact.
-- **None:** used only for calibration rows that are not errors.
+| Severity | Definition | Example |
+|---|---|---|
+| Critical | Could cause direct patient harm | Wrong medication, wrong dose, missed allergy, wrong laterality for surgery |
+| Major | Changes clinical decision or coding | Omitted diagnosis, wrong temporality of a symptom |
+| Moderate | Requires clinician edit before signing | Omitted severity modifier, attribution ambiguity |
+| Minor | Stylistic, no clinical impact | Formatting, synonym choice |
+| None | Not an error | — |
 
 `clinically_significant` is true for moderate, major, and critical unless the span is purely administrative.
 
 ## Error types
 
-### omission
+## OMISSION
 
-**Definition.** A fact required in the gold note (symptom, denial, medication, laterality, plan item) is absent from the generated note.
+**Definition:** A clinically relevant fact present in the source transcript or gold note is absent from the generated note.
 
-**Positive.** Gold: “Denies chest pain.” Generated assessment never mentions chest pain.
+**Positive example:**
+- Transcript: "Patient reports chest pain radiating to left arm."
+- Generated: "Patient reports chest pain."
+- Error: omission of radiation (clinically significant for ACS triage).
 
-**Negative.** Gold lists fatigue; generated says “tiredness” in subjective. That is style, not omission.
+**Negative example:**
+- Transcript: "Patient reports mild intermittent chest pain."
+- Generated: "Patient reports chest pain."
+- Not an omission of *fact*; omission of *severity modifier* — classify as TEMPORALITY or MODERATE severity, see rubric.
 
-**Edge.** A fact in the transcript but marked out of scope for this note type (small talk) is not an omission.
-
-**Typical severity.** Moderate if a clinician would add it; major if it is a denial or allergy; critical if it is an allergy or a dangerous denial.
+**Edge cases:**
+- If the omitted fact is also negated in the transcript, classify as NEGATION_FLIP, not OMISSION.
 
 ### hallucination
 
