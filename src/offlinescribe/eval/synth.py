@@ -98,10 +98,19 @@ def build_encounter(idx: int) -> Encounter:
 
 def write_manifest(path: Path, n: int = 100) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
+    transcripts = path.parent / "transcripts"
+    gold_dir = path.parent / "gold_notes"
+    transcripts.mkdir(exist_ok=True)
+    gold_dir.mkdir(exist_ok=True)
     rows = [build_encounter(i) for i in range(1, n + 1)]
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(row.model_dump_json() + "\n")
+            (transcripts / f"{row.encounter_id}.txt").write_text(row.transcript, encoding="utf-8")
+            (gold_dir / f"{row.encounter_id}.json").write_text(
+                row.gold_note.model_dump_json(indent=2),
+                encoding="utf-8",
+            )
     return path
 
 

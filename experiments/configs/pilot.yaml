@@ -1,0 +1,13 @@
+run_id: pilot
+encounters: data/synthetic/manifest.jsonl
+output_dir: experiments/runs
+conditions:
+  - {name: baseline, rag: false, grounding: false, verifier: false}
+  - {name: rag, rag: true, grounding: false, verifier: false}
+  - {name: rag_grounded, rag: true, grounding: true, verifier: false}
+  - {name: rag_grounded_verified, rag: true, grounding: true, verifier: true}
+models:
+  - stub
+asr:
+  - whisper-large-v3
+seeds: [0]

@@ -1,5 +1,6 @@
-# CI / docker sample. Same conditions as study_design.md, smaller grid.
+run_id: sample
 encounters: data/synthetic/manifest.jsonl
+output_dir: experiments/runs
 conditions:
   - name: baseline
     rag: false

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from offlinescribe.eval.taxonomy import Annotation, EncounterNote, Severity
+from offlinescribe.eval.taxonomy import SEVERITY_WEIGHTS, Annotation, EncounterNote
 
 _LATERALITY = re.compile(r"\b(left|right|bilateral)\b", re.IGNORECASE)
 _NEGATION = re.compile(
@@ -181,16 +181,9 @@ def flatten_note(note: EncounterNote) -> str:
 
 
 def clinical_error_score(annotations: list[Annotation]) -> float:
-    weights = {
-        Severity.CRITICAL: 10,
-        Severity.MAJOR: 5,
-        Severity.MODERATE: 2,
-        Severity.MINOR: 0.5,
-        Severity.NONE: 0,
-    }
     if not annotations:
         return 0.0
-    return sum(weights[item.severity] for item in annotations) / len(annotations)
+    return sum(SEVERITY_WEIGHTS[item.severity] for item in annotations) / max(len(annotations), 1)
 
 
 def score_pair(source: str, gold: EncounterNote, generated: EncounterNote, gold_meds: list[str], gold_entities: list[str]) -> dict[str, float]:

@@ -1,4 +1,6 @@
+run_id: ablation_v1
 encounters: data/synthetic/manifest.jsonl
+output_dir: experiments/runs
 conditions:
   - name: baseline
     rag: false

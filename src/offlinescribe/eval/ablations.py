@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -25,17 +26,20 @@ def load_encounters(path: Path) -> list[Encounter]:
 def run_ablation(config_path: Path, output_dir: Path) -> Path:
     cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     encounters = load_encounters(Path(cfg["encounters"]))
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_id = str(cfg.get("run_id") or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"))
     dest = output_dir / run_id
     dest.mkdir(parents=True, exist_ok=True)
+    (dest / "outputs").mkdir(exist_ok=True)
     (dest / "config.yaml").write_text(config_path.read_text(encoding="utf-8"), encoding="utf-8")
+    (dest / "git_sha.txt").write_text(_git_sha() + "\n", encoding="utf-8")
+    (dest / "pip_freeze.txt").write_text(_pip_freeze(), encoding="utf-8")
 
-    results_path = dest / "results.jsonl"
+    results_path = dest / "metrics.jsonl"
     rows: list[dict] = []
     with results_path.open("w", encoding="utf-8") as handle:
         for encounter in encounters:
             for condition in cfg["conditions"]:
-                name = condition["name"]
+                name = condition["name"] if isinstance(condition, dict) else str(condition)
                 for model in cfg["models"]:
                     for asr in cfg["asr"]:
                         for seed in cfg.get("seeds", [0]):
@@ -63,14 +67,34 @@ def run_ablation(config_path: Path, output_dir: Path) -> Path:
                             }
                             handle.write(json.dumps(row) + "\n")
                             rows.append(row)
+                            out = dest / "outputs" / encounter.encounter_id
+                            out.mkdir(parents=True, exist_ok=True)
+                            fname = f"{name}__{model}__{asr}__s{seed}.json"
+                            (out / fname).write_text(generated.model_dump_json(indent=2), encoding="utf-8")
 
+    (dest / "results.jsonl").write_text(results_path.read_text(encoding="utf-8"), encoding="utf-8")
     metrics_summary = _summarize(rows)
     (dest / "metrics.json").write_text(
         json.dumps(metrics_summary, indent=2),
         encoding="utf-8",
     )
     _write_table(dest / "results_table.md", metrics_summary)
+    _write_csv(dest / "summary.csv", metrics_summary)
     return dest
+
+
+def _git_sha() -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+
+
+def _pip_freeze() -> str:
+    try:
+        return subprocess.check_output(["python", "-m", "pip", "freeze"], text=True)
+    except (OSError, subprocess.CalledProcessError):
+        return ""
 
 
 def _summarize(rows: list[dict]) -> dict:
@@ -92,7 +116,7 @@ def _summarize(rows: list[dict]) -> dict:
         cell: dict[str, object] = {"n": len(subset)}
         for key in keys:
             values = [float(row[key]) for row in subset]
-            center, lo, hi = bootstrap_ci(values, seed=0)
+            center, lo, hi = bootstrap_ci(values, n=400, seed=0)
             cell[key] = {"mean": center, "ci95_lo": lo, "ci95_hi": hi}
         by_condition[condition] = cell
     return {
@@ -125,5 +149,15 @@ def _write_table(path: Path, summary: dict) -> None:
             f"{h['mean']:.3f} [{h['ci95_lo']:.3f}, {h['ci95_hi']:.3f}] | "
             f"{o['mean']:.3f} [{o['ci95_lo']:.3f}, {o['ci95_hi']:.3f}] | "
             f"{r['mean']:.3f} |"
+        )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_csv(path: Path, summary: dict) -> None:
+    lines = ["condition,n,hallucination_rate,omission_rate,rouge_l"]
+    for name, cell in summary["by_condition"].items():
+        lines.append(
+            f"{name},{cell['n']},{cell['hallucination_rate']['mean']:.6f},"
+            f"{cell['omission_rate']['mean']:.6f},{cell['rouge_l']['mean']:.6f}"
         )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
