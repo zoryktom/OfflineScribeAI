@@ -3,7 +3,7 @@ import { DEMO_COVERAGE_BLURB } from "./DemoLanding";
 const STEPS = [
   {
     title: "The conversation",
-    body: "This is a written fake conversation used as the recording. In a real workflow you would check whether the speech model heard medication names and symptoms correctly. Wrong words here get copied into the draft and become invisible later if nobody looks.",
+    body: "This is a written fake conversation used as the recording. In a real workflow you would check whether the speech model heard medication names and symptoms correctly. Wrong words here get copied into the draft and stay wrong if nobody checks.",
   },
   {
     title: "The AI draft",

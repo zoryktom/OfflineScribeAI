@@ -1,0 +1,64 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+\title{OfflineScribeAI: A Local-First Evaluation Harness for Clinical Documentation LLMs}
+\author{Zorykto Mykola}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Ambient and local language models can draft SOAP notes, but published error rates by type, grounding condition, and ASR quality remain scarce. This paper specifies a public, PHI-free harness: a span-level taxonomy, a 100-encounter synthetic corpus, paired ablation conditions (baseline, RAG, RAG+grounding, RAG+grounding+verifier), and clinician instruments (PDQI-9, NASA-TLX, edit time). Results tables in this draft are empty on purpose. The committed runner reproduces a seeded stub table so the analysis path can be checked without inventing model or human findings.
+\end{abstract}
+
+\section{Introduction}
+Documentation burden is a workflow and coordination problem, not only a generation problem \citep{sinsky2016allocation,arndt2017tethered,sittig2010eight}. Ambient scribes change who types; they do not remove the need to notice a flipped denial or a wrong dose. We ask how local-first scribes fail and which grounding steps reduce clinically meaningful errors without creating new ones. Primary and secondary questions are stated in the repository file \texttt{docs/research\_question.md}.
+
+\section{Related Work}
+We draw on documentation-burden time-motion work, ambient-scribe implementation reports, hallucination surveys, retrieval and attribution, trust calibration, CDS and sociotechnical frameworks, and local-model privacy arguments. A narrative synthesis is \texttt{docs/related\_work.md}; bibliographic entries are in \texttt{refs.bib}.
+
+\section{Methods}
+\textbf{Unit of analysis.} Encounter (transcript $\rightarrow$ note).\\
+\textbf{Conditions.} \texttt{baseline}, \texttt{rag}, \texttt{rag\_grounded}, \texttt{rag\_grounded\_verified} as in \texttt{docs/study\_design.md}.\\
+\textbf{Taxonomy.} Eleven error types and a five-level severity rubric (\texttt{docs/error\_taxonomy.md}).\\
+\textbf{Annotation.} Two annotators, third-party adjudication, Cohen's $\kappa$ on major/critical labels.\\
+\textbf{Automatic metrics.} WER, ROUGE-L, medication overlap, dose match, negation and laterality heuristics, hallucination/omission rates, citation overlap, severity-weighted clinical error score.\\
+\textbf{Human evaluation.} Adapted PDQI-9, error counts, edit time, trust, would-you-sign, NASA-TLX.\\
+\textbf{Analysis.} McNemar, Wilcoxon, mixed-effects models, Holm--Bonferroni, bootstrap CIs.\\
+\textbf{Privacy.} Synthetic corpus only. FHIR DocumentReference mapping is dry-run; live POST is refused.
+
+\section{Results}
+Human $\kappa$, model ablations, and clinician ICC are \textbf{not reported} in this skeleton. After those studies are run, replace Table~\ref{tab:main} from \texttt{experiments/runs/*/results\_table.md}. Stub \texttt{make eval} output is a perturbation check, not a finding.
+
+\begin{table}[h]
+\centering
+\caption{Main condition contrast. Fill after live models and human labels exist.}
+\label{tab:main}
+\begin{tabular}{lccc}
+\toprule
+Condition & Hallucination rate & Omission rate & Clinical error score \\
+\midrule
+baseline & --- & --- & --- \\
+rag & --- & --- & --- \\
+rag\_grounded & --- & --- & --- \\
+rag\_grounded\_verified & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+H1--H4 remain hypotheses. Limitations: synthetic English templates, no clinician $N$, stub generator in continuous integration, no longitudinal deployment \citep{greenhalgh2017beyond}. See \texttt{docs/limitations.md}.
+
+\section{Conclusion}
+The contribution of this repository, as committed, is a methods artifact: taxonomy, corpus schema, runner, and instruments. Empirical claims require the human and model studies named in the protocol documents.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

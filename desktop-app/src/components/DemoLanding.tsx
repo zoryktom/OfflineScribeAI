@@ -1,5 +1,5 @@
 export const DEMO_LANDING_INTRO =
-  "This shows the documentation workflow around a fake visit: a model drafts a note, and a person still has to catch what the draft got wrong or left invisible. It is not accurate enough for real patients yet.";
+  "This shows the documentation workflow around a fake visit: a model drafts a note, and a person still has to catch what the draft got wrong or left out. It is not accurate enough for real patients yet.";
 
 export const DEMO_COVERAGE_BLURB =
   "In testing, the assertion check caught 6 of 6 denied-symptom probes and still gave 2 false alarms out of 4 on caution language (both on safety-net plan language). Drug-name flags still missed 3 of 3 planted garbles. That's what 'not ready for real patients' looks like in practice.";

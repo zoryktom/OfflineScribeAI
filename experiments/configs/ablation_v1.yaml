@@ -1,0 +1,27 @@
+encounters: data/synthetic/manifest.jsonl
+conditions:
+  - name: baseline
+    rag: false
+    grounding: false
+    verifier: false
+  - name: rag
+    rag: true
+    grounding: false
+    verifier: false
+  - name: rag_grounded
+    rag: true
+    grounding: true
+    verifier: false
+  - name: rag_grounded_verified
+    rag: true
+    grounding: true
+    verifier: true
+models:
+  - llama3.1:8b
+  - qwen2.5:14b
+  - mistral:7b
+  - gpt-4o-mini
+asr:
+  - whisper-large-v3
+  - whisper-medium
+seeds: [0, 1, 2]

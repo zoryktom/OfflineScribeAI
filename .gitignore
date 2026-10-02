@@ -29,6 +29,12 @@ REVIEW_PACKET.md
 **/*REVIEW_PACKET*
 **/*review-notes*
 
+# Ablation outputs (keep configs)
+experiments/runs/**
+!experiments/runs/.gitkeep
+data/audit/*.jsonl
+!data/audit/.gitkeep
+
 # Python
 .venv/
 venv/

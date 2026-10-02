@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/zoryktom/OfflineScribeAI/data/schemas/annotation.schema.json",
+  "title": "OfflineScribe annotation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "encounter_id",
+    "condition",
+    "model",
+    "asr",
+    "span_generated",
+    "error_type",
+    "severity",
+    "clinically_significant",
+    "rationale",
+    "annotator_id"
+  ],
+  "properties": {
+    "encounter_id": { "type": "string", "minLength": 1 },
+    "condition": {
+      "type": "string",
+      "enum": ["baseline", "rag", "rag_grounded", "rag_grounded_verified"]
+    },
+    "model": { "type": "string", "minLength": 1 },
+    "asr": { "type": "string", "minLength": 1 },
+    "span_generated": { "type": "string" },
+    "span_source": { "type": ["string", "null"] },
+    "error_type": {
+      "type": "string",
+      "enum": [
+        "omission",
+        "hallucination",
+        "negation_flip",
+        "laterality",
+        "medication",
+        "dose",
+        "temporality",
+        "attribution",
+        "icd_instability",
+        "asr_propagation",
+        "style_only"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["none", "minor", "moderate", "major", "critical"]
+    },
+    "clinically_significant": { "type": "boolean" },
+    "rationale": { "type": "string", "minLength": 1 },
+    "annotator_id": { "type": "string", "minLength": 1 }
+  }
+}

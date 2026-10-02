@@ -1,0 +1,24 @@
+# CI / docker sample. Same conditions as study_design.md, smaller grid.
+encounters: data/synthetic/manifest.jsonl
+conditions:
+  - name: baseline
+    rag: false
+    grounding: false
+    verifier: false
+  - name: rag
+    rag: true
+    grounding: false
+    verifier: false
+  - name: rag_grounded
+    rag: true
+    grounding: true
+    verifier: false
+  - name: rag_grounded_verified
+    rag: true
+    grounding: true
+    verifier: true
+models:
+  - stub
+asr:
+  - whisper-large-v3
+seeds: [0]

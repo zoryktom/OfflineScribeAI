@@ -1,0 +1,7 @@
+services:
+  eval:
+    build: .
+    command: offlinescribe eval run --config experiments/configs/sample.yaml --out /tmp/runs
+    volumes:
+      - ./data:/app/data:ro
+      - ./experiments/configs:/app/experiments/configs:ro

@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: "OfflineScribeAI: A Local-First Evaluation Harness for Clinical Documentation LLMs"
+message: If you use this software, please cite it using these metadata.
+type: software
+authors:
+  - family-names: Mykola
+    given-names: Zorykto
+license: MIT
+version: 0.2.0
+date-released: "2026-10-02"
+url: "https://github.com/zoryktom/OfflineScribeAI"
+repository-code: "https://github.com/zoryktom/OfflineScribeAI"
+abstract: >-
+  Evaluation harness and local-first prototype for measuring
+  documentation errors in LLM-drafted SOAP notes on synthetic
+  encounters. Research prototype. Not for clinical use.
+  Sole author: Zorykto Mykola.
