@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     p_ann.add_argument("--asr", default="whisper-large-v3")
     p_ann.add_argument("--manifest", default="data/synthetic/manifest.jsonl")
     p_ann.add_argument("--out-dir", default="data/annotations")
+    p_ann.add_argument("--output", default="")
     p_ann.add_argument("--non-interactive", action="store_true")
     p_ann.add_argument("--error-type", default="style_only")
     p_ann.add_argument("--severity", default="none")
@@ -77,6 +78,8 @@ def main(argv: list[str] | None = None) -> int:
                 args.manifest,
                 "--out-dir",
                 args.out_dir,
+                "--output",
+                args.output,
                 "--error-type",
                 args.error_type,
                 "--severity",

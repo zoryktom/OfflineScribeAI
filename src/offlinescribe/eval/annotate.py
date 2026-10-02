@@ -81,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--asr", default="whisper-large-v3")
     parser.add_argument("--manifest", default="data/synthetic/manifest.jsonl")
     parser.add_argument("--out-dir", default="data/annotations")
+    parser.add_argument("--output", default="")
     parser.add_argument("--non-interactive", action="store_true")
     parser.add_argument("--error-type", default="style_only")
     parser.add_argument("--severity", default="none")
@@ -91,7 +92,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    dest = Path(args.out_dir) / f"{args.annotator}.jsonl"
+    dest = Path(args.output) if args.output else Path(args.out_dir) / f"{args.annotator}.jsonl"
     if already_annotated(dest, args.encounter, args.condition, args.annotator):
         print(f"skip: {args.encounter} already annotated by {args.annotator} for {args.condition}")
         return 0

@@ -52,7 +52,7 @@ def test_clinical_error_score() -> None:
             error_type=ErrorType.HALLUCINATION,
             severity=Severity.CRITICAL,
             clinically_significant=True,
-            rationale="t",
+            rationale="planted critical span",
             annotator_id="A1",
         )
     ]

@@ -30,18 +30,38 @@ class Severity(str, Enum):
     CRITICAL = "critical"
 
 
+SEVERITY_WEIGHTS: dict[Severity, float] = {
+    Severity.NONE: 0.0,
+    Severity.MINOR: 0.5,
+    Severity.MODERATE: 2.0,
+    Severity.MAJOR: 5.0,
+    Severity.CRITICAL: 10.0,
+}
+
+
 class Annotation(BaseModel):
     encounter_id: str
     condition: str
     model: str
     asr: str
-    span_generated: str
-    span_source: Optional[str] = None
+    annotator_id: str
+    span_generated: str = Field(..., description="Text span in generated note")
+    span_source: Optional[str] = Field(None, description="Span in source transcript if applicable")
     error_type: ErrorType
     severity: Severity
     clinically_significant: bool
-    rationale: str
+    rationale: str = Field(..., min_length=10)
+
+
+class EncounterAnnotation(BaseModel):
+    encounter_id: str
+    condition: str
+    model: str
+    asr: str
     annotator_id: str
+    annotations: list[Annotation]
+    gold_note_adequate: bool
+    notes: Optional[str] = None
 
 
 class EncounterNote(BaseModel):

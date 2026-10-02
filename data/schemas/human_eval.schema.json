@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OfflineScribe human review",
+  "type": "object",
+  "required": [
+    "reviewer_id",
+    "encounter_id",
+    "condition",
+    "pdqi9",
+    "factual_error_count",
+    "clinically_significant_error_count",
+    "edit_time_seconds",
+    "trust",
+    "would_sign"
+  ],
+  "properties": {
+    "reviewer_id": { "type": "string" },
+    "encounter_id": { "type": "string" },
+    "condition": { "type": "string" },
+    "pdqi9": { "type": "object" },
+    "factual_error_count": { "type": "integer" },
+    "clinically_significant_error_count": { "type": "integer" },
+    "edit_time_seconds": { "type": "number" },
+    "trust": { "type": "integer", "minimum": 1, "maximum": 7 },
+    "would_sign": { "type": "string", "enum": ["yes", "no", "with_edits"] },
+    "acceptability": { "type": "integer" },
+    "nasa_tlx": { "type": "object" },
+    "sus": { "type": "object" },
+    "notes": { "type": ["string", "null"] }
+  }
+}
