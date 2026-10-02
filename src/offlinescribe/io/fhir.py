@@ -10,7 +10,8 @@ from pathlib import Path
 
 from offlinescribe.eval.taxonomy import Encounter, EncounterNote
 
-LIVE_POST_FLAG = "OFFLINESCRIBE_ENABLE_LIVE_FHIR_POST"
+LIVE_POST_FLAG = "OFFLINESCRIBE_ALLOW_FHIR_WRITE"
+LEGACY_LIVE_POST_FLAG = "OFFLINESCRIBE_ENABLE_LIVE_FHIR_POST"
 
 
 def composition(encounter: Encounter, note: EncounterNote) -> dict:
@@ -60,7 +61,10 @@ def write_dry_run(path: Path, encounter: Encounter, note: EncounterNote) -> Path
 
 
 def live_post_allowed() -> bool:
-    return os.environ.get(LIVE_POST_FLAG, "").strip() == "1"
+    return (
+        os.environ.get(LIVE_POST_FLAG, "").strip() == "1"
+        or os.environ.get(LEGACY_LIVE_POST_FLAG, "").strip() == "1"
+    )
 
 
 def post_or_refuse(encounter: Encounter, note: EncounterNote) -> dict:
