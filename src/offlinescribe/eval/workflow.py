@@ -15,7 +15,10 @@ class WorkflowEvent(BaseModel):
     event: Literal[
         "open",
         "first_draft",
+        "t_draft_ready",
+        "t_first_edit",
         "edit",
+        "t_sign",
         "sign",
         "reject",
     ]

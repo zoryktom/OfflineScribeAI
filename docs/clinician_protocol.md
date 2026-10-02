@@ -8,7 +8,7 @@ The committed corpus is synthetic. There is no real PHI and no patient recruitme
 
 ## Recruitment
 
-Target 3–5 reviewers: MD, DO, RN, NP, PA, or senior medical students with ambulatory documentation experience. Recruit by email. No employment consequence for declining. Stop at five completed sessions unless a later amendment says otherwise.
+Target 3–5 reviewers: MD, DO, RN, NP, PA, or senior medical students with ambulatory documentation experience. Recruit by email. No employment consequence for declining. Stopping rule: stop at 3 reviewers if ICC ≥ 0.75; else recruit to 5.
 
 ## Consent script (read aloud or shown on screen)
 

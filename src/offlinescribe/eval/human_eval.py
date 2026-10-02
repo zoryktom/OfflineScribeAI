@@ -37,12 +37,16 @@ class PDQI9(BaseModel):
 
 
 class NasaTlx(BaseModel):
-    mental_demand: int = Field(ge=0, le=20)
-    physical_demand: int = Field(ge=0, le=20)
-    temporal_demand: int = Field(ge=0, le=20)
-    performance: int = Field(ge=0, le=20)
-    effort: int = Field(ge=0, le=20)
-    frustration: int = Field(ge=0, le=20)
+    mental_demand: int = Field(ge=0, le=100)
+    physical_demand: int = Field(ge=0, le=100)
+    temporal_demand: int = Field(ge=0, le=100)
+    performance: int = Field(ge=0, le=100)
+    effort: int = Field(ge=0, le=100)
+    frustration: int = Field(ge=0, le=100)
+
+
+class SUS(BaseModel):
+    items: list[int] = Field(min_length=10, max_length=10)
 
 
 class HumanReview(BaseModel):
@@ -57,6 +61,7 @@ class HumanReview(BaseModel):
     would_sign: Literal["yes", "no", "with_edits"]
     acceptability: int = Field(ge=1, le=7)
     nasa_tlx: NasaTlx
+    sus: SUS | None = None
     notes: Optional[str] = None
 
 
@@ -98,13 +103,14 @@ def _neutral_review(args: argparse.Namespace, elapsed: float) -> HumanReview:
         would_sign="with_edits",
         acceptability=4,
         nasa_tlx=NasaTlx(
-            mental_demand=10,
-            physical_demand=2,
-            temporal_demand=10,
-            performance=10,
-            effort=10,
-            frustration=8,
+            mental_demand=50,
+            physical_demand=10,
+            temporal_demand=50,
+            performance=50,
+            effort=50,
+            frustration=40,
         ),
+        sus=SUS(items=[3] * 10),
         notes="non-interactive scaffold; not a collected clinician rating",
     )
 
