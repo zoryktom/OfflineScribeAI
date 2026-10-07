@@ -2,12 +2,12 @@ import { DEMO_COVERAGE_BLURB } from "./DemoLanding";
 
 const STEPS = [
   {
-    title: "The conversation",
-    body: "This is a written fake conversation used as the recording. In a real workflow you would check whether the speech model heard medication names and symptoms correctly. Wrong words here get copied into the draft and stay wrong if nobody checks.",
+    title: "The encounter transcript",
+    body: "This is a written synthetic encounter used as the recording. In a real workflow you would check whether the speech model heard medication names and symptoms correctly. Wrong words here get copied into the draft and stay wrong if nobody checks.",
   },
   {
     title: "The AI draft",
-    body: "This is the SOAP draft the model wrote from that conversation. Checking every sentence against the transcript is the coordination work the system does not do for you. The model can invent details that were never said.",
+    body: "This is the SOAP draft the model wrote from that transcript. Checking every sentence against the source text is the coordination work the system does not do for you. The model can invent details that were never said.",
   },
   {
     title: "Flags",

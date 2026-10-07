@@ -78,7 +78,7 @@ describe("App first-paint restriction", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /Start the fake visit walkthrough/i }),
+        screen.getByRole("button", { name: /Start synthetic visit walkthrough/i }),
       ).toBeVisible();
     });
     assertRestrictedControlsAbsent();

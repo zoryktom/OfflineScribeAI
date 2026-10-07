@@ -12,7 +12,7 @@ import { sampleNote } from "../test/sampleNote";
 import type { Visit } from "../api/client";
 
 describe("demo landing and watermarks", () => {
-  it("explains the fake-patient limit and measured misses before a note is shown", () => {
+  it("explains the synthetic-patient limit and measured misses before a note is shown", () => {
     render(<DemoLanding onStart={vi.fn()} starting={false} />);
     expect(screen.getByText(DEMO_LANDING_INTRO)).toBeVisible();
     expect(screen.getByText(DEMO_COVERAGE_BLURB)).toBeVisible();
@@ -23,7 +23,7 @@ describe("demo landing and watermarks", () => {
     const user = userEvent.setup();
     const onStart = vi.fn();
     render(<DemoLanding onStart={onStart} starting={false} />);
-    await user.click(screen.getByRole("button", { name: /Start the fake visit walkthrough/i }));
+    await user.click(screen.getByRole("button", { name: /Start synthetic visit walkthrough/i }));
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 

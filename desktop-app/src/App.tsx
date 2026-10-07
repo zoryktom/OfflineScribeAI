@@ -128,7 +128,7 @@ export default function App() {
       setError(
         reason instanceof Error
           ? reason.message
-          : "Could not load the fake visit. Confirm DEMO_MODE=true and the local server is running.",
+          : "Could not load the synthetic visit. Confirm DEMO_MODE=true and the local server is running.",
       );
     } finally {
       setBusy(false);
@@ -168,7 +168,7 @@ export default function App() {
         {healthReady ? (
           <p className="app-lede">
             {demoMode
-              ? "A locked-down look at the documentation workflow on a fake conversation: draft, flags, and named review."
+              ? "A locked-down look at the documentation workflow on a synthetic encounter: draft, flags, and named review."
               : "Record a visit, do the review work the draft cannot, and keep it on this computer until you choose to sync."}
           </p>
         ) : null}

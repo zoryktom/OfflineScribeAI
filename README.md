@@ -4,6 +4,10 @@
 
 **Author:** Zorykto Mykola. There are no other authors.
 
+**Project website:** https://zoryktom.github.io/OfflineScribeAI/
+
+Repository policy: no real patient data, no private prompt/chat logs, and no co-authored-by commit metadata.
+
 Research prototype. **Not for clinical use.** Not FDA-cleared, not clinically validated, not HIPAA-certified. No live EHR write.
 
 ## Research Question

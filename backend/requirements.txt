@@ -10,5 +10,6 @@ pytest>=8.3.0
 # 0.6.2+ ships macOS ARM / Windows / Linux wheels including CPython 3.14.
 sqlcipher3>=0.6.2
 faster-whisper>=1.1.0,<2
+av>=11,<19
 
 # Ollama is a separate local process, not a Python package.
