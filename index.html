@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OfflineScribeAI | Local-first clinical documentation research</title>
+    <meta
+      name="description"
+      content="OfflineScribeAI is a local-first clinical documentation and evaluation framework for studying source grounding, human review, failure modes, and resource tradeoffs."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="OfflineScribeAI home">OfflineScribeAI</a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#system">System</a>
+        <a href="#evaluation">Evaluation</a>
+        <a href="#safety">Safety</a>
+        <a href="#reproduce">Reproduce</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Local-first clinical AI research prototype</p>
+          <h1>OfflineScribeAI</h1>
+          <p class="lead">
+            A source-grounded clinical documentation framework for studying whether useful
+            draft notes can be generated locally, reviewed by a named human, and evaluated
+            under realistic resource constraints.
+          </p>
+          <div class="hero-actions" aria-label="Project links">
+            <a class="button primary" href="https://github.com/zoryktom/OfflineScribeAI">GitHub repository</a>
+            <a class="button secondary" href="https://github.com/zoryktom/OfflineScribeAI/blob/main/README.md">Read the methods</a>
+          </div>
+        </div>
+        <dl class="hero-facts" aria-label="Project facts">
+          <div>
+            <dt>Author</dt>
+            <dd>Zorykto Mykola</dd>
+          </div>
+          <div>
+            <dt>Dataset</dt>
+            <dd>100 synthetic encounters</dd>
+          </div>
+          <div>
+            <dt>Default posture</dt>
+            <dd>No cloud inference</dd>
+          </div>
+          <div>
+            <dt>Clinical status</dt>
+            <dd>Research only</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="band statement">
+        <div class="content">
+          <p class="section-label">Research question</p>
+          <h2>Can local-first clinical AI generate useful, source-grounded documentation while operating with constrained connectivity and compute?</h2>
+          <p>
+            OfflineScribeAI does not claim to diagnose, treat, replace clinicians, or validate
+            clinical safety. It measures documentation behavior: fact preservation, unsupported
+            statements, negation, temporal context, source evidence, review burden, latency,
+            and local resource use.
+          </p>
+        </div>
+      </section>
+
+      <section id="system" class="section">
+        <div class="section-heading">
+          <p class="section-label">System</p>
+          <h2>Every stage is observable</h2>
+          <p>
+            The repository keeps the workstation and the research harness side by side:
+            FastAPI and React for the local review workflow, Python CLI tools for benchmark
+            runs, seeded synthetic data, and repeatable metrics.
+          </p>
+        </div>
+        <figure class="wide-visual">
+          <img src="assets/system-map.svg" alt="Pipeline from synthetic encounter to local ASR, draft note, evidence, safety gate, review, storage, and evaluation." />
+          <figcaption>Local processing path with source evidence and a human review gate before approved documentation.</figcaption>
+        </figure>
+        <div class="module-grid">
+          <article class="module">
+            <h3>Local documentation path</h3>
+            <p>Audio or script input moves through faster-whisper, local note drafting, span grounding, and a schema-checked SOAP note.</p>
+          </article>
+          <article class="module">
+            <h3>Human-in-the-loop review</h3>
+            <p>Drafts remain drafts until a reviewer is named. Edits, approvals, and rejections are logged as research signals.</p>
+          </article>
+          <article class="module">
+            <h3>Evaluation harness</h3>
+            <p>Command-line runs compare baseline, retrieval, grounded, and verifier conditions on the same synthetic cases.</p>
+          </article>
+          <article class="module">
+            <h3>Failure analysis</h3>
+            <p>Unsupported claims, negation flips, temporal errors, medication errors, and resource failures are preserved instead of hidden.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="evaluation" class="band">
+        <div class="content two-column">
+          <div>
+            <p class="section-label">Evaluation</p>
+            <h2>Built to measure tradeoffs, not just produce a note</h2>
+            <p>
+              The committed runner uses deterministic stubs so tests and reports can run
+              without GPUs or API keys. Live model comparisons are explicitly marked as planned
+              until they are executed and reviewed.
+            </p>
+            <ul class="check-list">
+              <li>Clinical extraction precision, recall, and F1</li>
+              <li>Grounded and unsupported statement rates</li>
+              <li>Negation and temporality accuracy</li>
+              <li>Human edit, rejection, and approval rates</li>
+              <li>Latency, RAM, CPU, disk, and model size</li>
+            </ul>
+          </div>
+          <figure class="dashboard-visual">
+            <img src="assets/research-dashboard.svg" alt="Research dashboard mockup with evaluation runs, grounding, unsupported claims, latency, and human edit rate." />
+          </figure>
+        </div>
+      </section>
+
+      <section class="section failure-section">
+        <div class="section-heading">
+          <p class="section-label">Failure modes</p>
+          <h2>Failures are findings</h2>
+          <p>
+            The project treats embarrassing cases as part of the evidence. A failed case should
+            show the input, expected behavior, actual output, likely reason, and mitigation.
+          </p>
+        </div>
+        <div class="taxonomy-grid" aria-label="Failure taxonomy">
+          <span>Hallucination</span>
+          <span>Grounding failure</span>
+          <span>Negation flip</span>
+          <span>Temporal error</span>
+          <span>Medication error</span>
+          <span>Terminology error</span>
+          <span>Formatting error</span>
+          <span>Resource failure</span>
+        </div>
+      </section>
+
+      <section id="safety" class="band safety">
+        <div class="content">
+          <p class="section-label">Safety posture</p>
+          <h2>Documentation support only</h2>
+          <div class="safety-grid">
+            <article>
+              <h3>No autonomous clinical decisions</h3>
+              <p>The system drafts documentation and flags evidence problems. It does not make diagnoses, treatment decisions, or EHR writes.</p>
+            </article>
+            <article>
+              <h3>Synthetic data by default</h3>
+              <p>The benchmark is synthetic and does not represent real clinical populations. Real data would require separate governance.</p>
+            </article>
+            <article>
+              <h3>Prompt injection awareness</h3>
+              <p>Transcript content is treated as data. Instruction-like text inside an encounter is a safety test, not a command source.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="reproduce" class="section reproduce">
+        <div class="section-heading">
+          <p class="section-label">Reproduce</p>
+          <h2>Clone, test, evaluate</h2>
+          <p>
+            These commands run the package tests, backend tests, UI tests, and seeded evaluation
+            path used by the repository.
+          </p>
+        </div>
+        <pre><code>git clone https://github.com/zoryktom/OfflineScribeAI.git
+cd OfflineScribeAI
+python -m pip install -e ".[dev]" -r backend/requirements.txt
+python -m pytest tests -q
+cd backend && python -m pytest -q
+cd ../desktop-app && npm ci && npm test -- --run
+cd .. && python -m offlinescribe.cli eval run --config experiments/configs/pilot.yaml</code></pre>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>OfflineScribeAI is authored by Zorykto Mykola. Research prototype, not for clinical use.</p>
+      <a href="https://github.com/zoryktom/OfflineScribeAI/blob/main/LICENSE">MIT License</a>
+    </footer>
+  </body>
+</html>

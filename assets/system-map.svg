@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="420" viewBox="0 0 1120 420" role="img" aria-labelledby="title desc">
+  <title id="title">OfflineScribeAI local pipeline</title>
+  <desc id="desc">Synthetic encounter, local ASR, transcript, local model, structured note, evidence, safety gate, human review, local storage, and evaluation loop.</desc>
+  <rect width="1120" height="420" fill="#fbfbf7"/>
+  <rect x="36" y="44" width="1048" height="332" rx="18" fill="#ffffff" stroke="#d7ded9"/>
+  <text x="64" y="86" fill="#126b62" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">LOCAL-FIRST CLINICAL DOCUMENTATION PIPELINE</text>
+  <text x="64" y="116" fill="#5d6968" font-family="Inter, Arial, sans-serif" font-size="14">Every stage emits artifacts that can be inspected, tested, and evaluated.</text>
+
+  <g font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700">
+    <rect x="64" y="164" width="128" height="82" rx="8" fill="#edf5f1" stroke="#9ecdc2"/>
+    <text x="88" y="196" fill="#172322">Synthetic</text>
+    <text x="92" y="218" fill="#172322">encounter</text>
+
+    <rect x="228" y="164" width="128" height="82" rx="8" fill="#eef2f7" stroke="#b7c5df"/>
+    <text x="263" y="196" fill="#172322">Local</text>
+    <text x="271" y="218" fill="#172322">ASR</text>
+
+    <rect x="392" y="164" width="128" height="82" rx="8" fill="#ffffff" stroke="#d7ded9"/>
+    <text x="424" y="207" fill="#172322">Transcript</text>
+
+    <rect x="556" y="164" width="128" height="82" rx="8" fill="#f4f0e4" stroke="#dfc980"/>
+    <text x="592" y="196" fill="#172322">Local</text>
+    <text x="595" y="218" fill="#172322">LLM</text>
+
+    <rect x="720" y="164" width="128" height="82" rx="8" fill="#ffffff" stroke="#d7ded9"/>
+    <text x="754" y="196" fill="#172322">SOAP</text>
+    <text x="766" y="218" fill="#172322">draft</text>
+
+    <rect x="884" y="130" width="136" height="58" rx="8" fill="#fff7f4" stroke="#dda1a7"/>
+    <text x="918" y="165" fill="#172322">Evidence</text>
+
+    <rect x="884" y="222" width="136" height="58" rx="8" fill="#fff7f4" stroke="#dda1a7"/>
+    <text x="909" y="257" fill="#172322">Safety gate</text>
+  </g>
+
+  <g stroke="#314f8f" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <path d="M192 205 H228"/>
+    <path d="M356 205 H392"/>
+    <path d="M520 205 H556"/>
+    <path d="M684 205 H720"/>
+    <path d="M848 185 C864 172 868 164 884 159"/>
+    <path d="M848 225 C864 238 868 248 884 251"/>
+  </g>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="308" y="304" width="178" height="46" rx="8" fill="#172322"/>
+    <text x="338" y="333" fill="#ffffff" font-size="13" font-weight="800">Local storage</text>
+    <rect x="514" y="304" width="214" height="46" rx="8" fill="#126b62"/>
+    <text x="548" y="333" fill="#ffffff" font-size="13" font-weight="800">Human review and approval</text>
+    <rect x="756" y="304" width="196" height="46" rx="8" fill="#314f8f"/>
+    <text x="789" y="333" fill="#ffffff" font-size="13" font-weight="800">Evaluation framework</text>
+  </g>
+
+  <g stroke="#126b62" stroke-width="2" fill="none" marker-end="url(#arrowGreen)">
+    <path d="M784 246 V286 C784 300 772 304 728 304"/>
+    <path d="M620 246 V304"/>
+    <path d="M514 327 H486"/>
+    <path d="M728 327 H756"/>
+    <path d="M854 304 C854 92 176 92 176 164"/>
+  </g>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#314f8f"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#126b62"/>
+    </marker>
+  </defs>
+</svg>
