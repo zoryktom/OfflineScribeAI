@@ -1,0 +1,327 @@
+{
+  "edges": [
+    {
+      "source": "encounter:E001",
+      "target": "source:transcript",
+      "type": "HAS_SOURCE"
+    },
+    {
+      "source": "encounter:E001",
+      "target": "note:draft",
+      "type": "HAS_DRAFT"
+    },
+    {
+      "source": "note:draft",
+      "target": "section:subjective",
+      "type": "HAS_SECTION"
+    },
+    {
+      "score": 0.6154,
+      "source": "section:subjective",
+      "supported_terms": 8,
+      "target": "source:transcript",
+      "type": "SUPPORTED_BY_SOURCE",
+      "unsupported_terms": 5
+    },
+    {
+      "source": "note:draft",
+      "target": "section:objective",
+      "type": "HAS_SECTION"
+    },
+    {
+      "score": 0.125,
+      "source": "section:objective",
+      "supported_terms": 1,
+      "target": "source:transcript",
+      "type": "SUPPORTED_BY_SOURCE",
+      "unsupported_terms": 7
+    },
+    {
+      "source": "note:draft",
+      "target": "section:assessment",
+      "type": "HAS_SECTION"
+    },
+    {
+      "score": 0.6667,
+      "source": "section:assessment",
+      "supported_terms": 8,
+      "target": "source:transcript",
+      "type": "SUPPORTED_BY_SOURCE",
+      "unsupported_terms": 4
+    },
+    {
+      "source": "note:draft",
+      "target": "section:plan",
+      "type": "HAS_SECTION"
+    },
+    {
+      "score": 0.2,
+      "source": "section:plan",
+      "supported_terms": 1,
+      "target": "source:transcript",
+      "type": "SUPPORTED_BY_SOURCE",
+      "unsupported_terms": 4
+    },
+    {
+      "source": "entity:1",
+      "target": "source:transcript",
+      "type": "MENTIONED_IN_SOURCE"
+    },
+    {
+      "source": "entity:1",
+      "target": "note:draft",
+      "type": "MENTIONED_IN_DRAFT"
+    },
+    {
+      "source": "entity:2",
+      "target": "source:transcript",
+      "type": "MENTIONED_IN_SOURCE"
+    },
+    {
+      "source": "entity:2",
+      "target": "note:draft",
+      "type": "MENTIONED_IN_DRAFT"
+    },
+    {
+      "source": "entity:3",
+      "target": "source:transcript",
+      "type": "MENTIONED_IN_SOURCE"
+    },
+    {
+      "source": "entity:3",
+      "target": "note:draft",
+      "type": "MENTIONED_IN_DRAFT"
+    },
+    {
+      "source": "planted:1",
+      "target": "note:draft",
+      "type": "RECOVERED_IN_DRAFT"
+    },
+    {
+      "source": "planted:2",
+      "target": "note:draft",
+      "type": "RECOVERED_IN_DRAFT"
+    },
+    {
+      "source": "planted:3",
+      "target": "note:draft",
+      "type": "RECOVERED_IN_DRAFT"
+    }
+  ],
+  "encounter_id": "E001",
+  "entity_coverage": [
+    {
+      "entity": "swelling",
+      "present_in_draft": true,
+      "present_in_source": true
+    },
+    {
+      "entity": "numbness",
+      "present_in_draft": true,
+      "present_in_source": true
+    },
+    {
+      "entity": "right",
+      "present_in_draft": true,
+      "present_in_source": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "encounter:E001",
+      "label": "E001",
+      "specialty": "ortho",
+      "type": "encounter"
+    },
+    {
+      "id": "source:transcript",
+      "label": "Synthetic source transcript",
+      "token_count": 40,
+      "type": "source"
+    },
+    {
+      "id": "note:draft",
+      "label": "Generated SOAP draft",
+      "token_count": 60,
+      "type": "generated_note"
+    },
+    {
+      "id": "section:subjective",
+      "label": "subjective",
+      "support_ratio": 0.6154,
+      "token_count": 21,
+      "type": "note_section"
+    },
+    {
+      "id": "section:objective",
+      "label": "objective",
+      "support_ratio": 0.125,
+      "token_count": 11,
+      "type": "note_section"
+    },
+    {
+      "id": "section:assessment",
+      "label": "assessment",
+      "support_ratio": 0.6667,
+      "token_count": 18,
+      "type": "note_section"
+    },
+    {
+      "id": "section:plan",
+      "label": "plan",
+      "support_ratio": 0.2,
+      "token_count": 10,
+      "type": "note_section"
+    },
+    {
+      "id": "entity:1",
+      "label": "swelling",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "type": "gold_entity"
+    },
+    {
+      "id": "entity:2",
+      "label": "numbness",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "type": "gold_entity"
+    },
+    {
+      "id": "entity:3",
+      "label": "right",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "type": "gold_entity"
+    },
+    {
+      "id": "planted:1",
+      "label": "numbness",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "stressor_type": "negation",
+      "type": "planted_stressor"
+    },
+    {
+      "id": "planted:2",
+      "label": "right",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "stressor_type": "laterality",
+      "type": "planted_stressor"
+    },
+    {
+      "id": "planted:3",
+      "label": "ibuprofen 400 mg",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "stressor_type": "medication",
+      "type": "planted_stressor"
+    }
+  ],
+  "planted_checks": [
+    {
+      "label": "numbness",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "stressor_type": "negation"
+    },
+    {
+      "label": "right",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "stressor_type": "laterality"
+    },
+    {
+      "label": "ibuprofen 400 mg",
+      "present_in_draft": true,
+      "present_in_source": true,
+      "stressor_type": "medication"
+    }
+  ],
+  "review_gate": {
+    "reasons": [
+      "high_token_novelty_vs_source",
+      "research_prototype_requires_named_human_review"
+    ],
+    "release_to_ehr": false,
+    "status": "human_review_required"
+  },
+  "risk_summary": {
+    "dose_exact_match": 1.0,
+    "edit_distance_normalized": 0.148148,
+    "entities_expected": 3,
+    "entities_recovered": 3,
+    "hallucination_rate": 0.333333,
+    "laterality_accuracy": 1.0,
+    "mean_section_support": 0.401775,
+    "medication_f1": 1.0,
+    "negation_accuracy": 1.0,
+    "omission_rate": 0.0,
+    "rouge_l": 0.929825,
+    "verifier_flag_count": 0,
+    "wer": 0.148148
+  },
+  "run": {
+    "asr": "whisper-large-v3",
+    "condition": "baseline",
+    "model": "stub",
+    "seed": 0
+  },
+  "schema_version": "offlinescribe.evidence_graph.v1",
+  "section_support": [
+    {
+      "section": "subjective",
+      "support_ratio": 0.6154,
+      "supported_terms": 8,
+      "top_unsupported_terms": [
+        "denies",
+        "presents",
+        "reports",
+        "takes",
+        "year"
+      ],
+      "unsupported_terms": 5
+    },
+    {
+      "section": "objective",
+      "support_ratio": 0.125,
+      "supported_terms": 1,
+      "top_unsupported_terms": [
+        "exam",
+        "findings",
+        "fixture",
+        "recorded",
+        "reviewed",
+        "synthetic",
+        "vitals"
+      ],
+      "unsupported_terms": 7
+    },
+    {
+      "section": "assessment",
+      "support_ratio": 0.6667,
+      "supported_terms": 8,
+      "top_unsupported_terms": [
+        "controlled",
+        "localized",
+        "medications",
+        "well"
+      ],
+      "unsupported_terms": 4
+    },
+    {
+      "section": "plan",
+      "support_ratio": 0.2,
+      "supported_terms": 1,
+      "top_unsupported_terms": [
+        "follow",
+        "needed",
+        "rice",
+        "worse"
+      ],
+      "unsupported_terms": 4
+    }
+  ],
+  "verifier_flags": []
+}

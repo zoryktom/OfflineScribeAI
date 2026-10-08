@@ -9,6 +9,7 @@ from pathlib import Path
 from offlinescribe.eval import annotate as annotate_mod
 from offlinescribe.eval import human_eval as human_eval_mod
 from offlinescribe.eval.ablations import run_ablation
+from offlinescribe.eval.validation import run_validation
 from offlinescribe.eval.taxonomy import Encounter
 from offlinescribe.io.audit import append, hash_payload
 from offlinescribe.io.deid import deidentify
@@ -59,6 +60,13 @@ def main(argv: list[str] | None = None) -> int:
     p_pipe.add_argument("--manifest", default="data/synthetic/manifest.jsonl")
     p_pipe.add_argument("--fhir-out", default="")
     p_pipe.add_argument("--audit", default="data/audit/audit.jsonl")
+
+    p_val = sub.add_parser("validate", help="Run benchmark validation gates and evidence graphs")
+    p_val.add_argument("--config", default="experiments/configs/pilot.yaml")
+    p_val.add_argument("--out", default="experiments/runs")
+    p_val.add_argument("--report", default="")
+    p_val.add_argument("--graphs", default="")
+    p_val.add_argument("--graph-limit", type=int, default=3)
 
     args = parser.parse_args(argv)
     if args.cmd == "annotate":
@@ -131,6 +139,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps({"deid_preview": redacted[:160]}))
         return 0
+    if args.cmd == "validate":
+        report = run_validation(
+            Path(args.config),
+            Path(args.out),
+            report_path=Path(args.report) if args.report else None,
+            graph_dir=Path(args.graphs) if args.graphs else None,
+            graph_limit=args.graph_limit,
+        )
+        print(json.dumps({"passed": report["passed"], "report": report["report_path"]}, indent=2))
+        return 0 if report["passed"] else 1
     return 2
 
 

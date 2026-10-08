@@ -1,0 +1,399 @@
+{
+  "config": "experiments/configs/pilot.yaml",
+  "evidence_graphs": [
+    "examples/validation/evidence_graphs/E001__baseline.json",
+    "examples/validation/evidence_graphs/E001__rag.json",
+    "examples/validation/evidence_graphs/E001__rag_grounded.json",
+    "examples/validation/evidence_graphs/E001__rag_grounded_verified.json"
+  ],
+  "gates": [
+    {
+      "expected": 400,
+      "name": "expected_row_count",
+      "observed": 400,
+      "passed": true
+    },
+    {
+      "expected": [
+        "baseline",
+        "rag",
+        "rag_grounded",
+        "rag_grounded_verified"
+      ],
+      "name": "all_configured_conditions_present",
+      "observed": [
+        "baseline",
+        "rag",
+        "rag_grounded",
+        "rag_grounded_verified"
+      ],
+      "passed": true
+    },
+    {
+      "expected": "<= 0.34",
+      "name": "baseline:hallucination_rate_mean",
+      "observed": 0.327301,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.13",
+      "name": "baseline:omission_rate_mean",
+      "observed": 0.12,
+      "passed": true
+    },
+    {
+      "expected": ">= 0.96",
+      "name": "baseline:rouge_l_mean",
+      "observed": 0.973764,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "baseline:medication_f1_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "baseline:dose_exact_match_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "baseline:negation_accuracy_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.34",
+      "name": "rag:hallucination_rate_mean",
+      "observed": 0.329066,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.13",
+      "name": "rag:omission_rate_mean",
+      "observed": 0.093333,
+      "passed": true
+    },
+    {
+      "expected": ">= 0.96",
+      "name": "rag:rouge_l_mean",
+      "observed": 0.964379,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag:medication_f1_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag:dose_exact_match_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag:negation_accuracy_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.34",
+      "name": "rag_grounded:hallucination_rate_mean",
+      "observed": 0.324711,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.13",
+      "name": "rag_grounded:omission_rate_mean",
+      "observed": 0.113333,
+      "passed": true
+    },
+    {
+      "expected": ">= 0.96",
+      "name": "rag_grounded:rouge_l_mean",
+      "observed": 0.987882,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag_grounded:medication_f1_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag_grounded:dose_exact_match_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag_grounded:negation_accuracy_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.34",
+      "name": "rag_grounded_verified:hallucination_rate_mean",
+      "observed": 0.325019,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.13",
+      "name": "rag_grounded_verified:omission_rate_mean",
+      "observed": 0.103333,
+      "passed": true
+    },
+    {
+      "expected": ">= 0.96",
+      "name": "rag_grounded_verified:rouge_l_mean",
+      "observed": 0.987461,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag_grounded_verified:medication_f1_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag_grounded_verified:dose_exact_match_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": ">= 1.0",
+      "name": "rag_grounded_verified:negation_accuracy_mean",
+      "observed": 1.0,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.12",
+      "name": "verified_omission_not_worse_than_baseline",
+      "observed": 0.10333333333333332,
+      "passed": true
+    },
+    {
+      "expected": "<= 0.32730140744011343",
+      "name": "verified_hallucination_not_worse_than_baseline",
+      "observed": 0.3250193706700367,
+      "passed": true
+    },
+    {
+      "expected": ">= 0.9737638476729658",
+      "name": "verified_rouge_not_worse_than_baseline",
+      "observed": 0.987461244783721,
+      "passed": true
+    }
+  ],
+  "interpretation": "Synthetic validation gates check reproducibility, benchmark plumbing, and known perturbation behavior. Passing does not establish clinical validity.",
+  "passed": true,
+  "run_path": "experiments/runs/pilot",
+  "schema_version": "offlinescribe.validation_report.v1",
+  "summary": {
+    "by_condition": {
+      "baseline": {
+        "dose_exact_match": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "edit_distance_normalized": {
+          "ci95_hi": 0.0650486804784807,
+          "ci95_lo": 0.04155727689398611,
+          "mean": 0.05411851029720064
+        },
+        "hallucination_rate": {
+          "ci95_hi": 0.33150685092326293,
+          "ci95_lo": 0.3230743326340474,
+          "mean": 0.32730140744011343
+        },
+        "laterality_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "medication_f1": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "n": 100,
+        "negation_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "omission_rate": {
+          "ci95_hi": 0.15,
+          "ci95_lo": 0.09,
+          "mean": 0.12
+        },
+        "rouge_l": {
+          "ci95_hi": 0.9795201273541783,
+          "ci95_lo": 0.968609826068745,
+          "mean": 0.9737638476729658
+        },
+        "wer": {
+          "ci95_hi": 0.0650486804784807,
+          "ci95_lo": 0.04155727689398611,
+          "mean": 0.05411851029720064
+        }
+      },
+      "rag": {
+        "dose_exact_match": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "edit_distance_normalized": {
+          "ci95_hi": 0.08674935257121716,
+          "ci95_lo": 0.062470192584371274,
+          "mean": 0.07414295844123812
+        },
+        "hallucination_rate": {
+          "ci95_hi": 0.3332208599765984,
+          "ci95_lo": 0.3248519185280767,
+          "mean": 0.3290660685826564
+        },
+        "laterality_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "medication_f1": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "n": 100,
+        "negation_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "omission_rate": {
+          "ci95_hi": 0.12,
+          "ci95_lo": 0.06333333333333332,
+          "mean": 0.09333333333333332
+        },
+        "rouge_l": {
+          "ci95_hi": 0.9697706363844166,
+          "ci95_lo": 0.9584135582115727,
+          "mean": 0.9643790218888091
+        },
+        "wer": {
+          "ci95_hi": 0.08674935257121716,
+          "ci95_lo": 0.062470192584371274,
+          "mean": 0.07414295844123812
+        }
+      },
+      "rag_grounded": {
+        "dose_exact_match": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "edit_distance_normalized": {
+          "ci95_hi": 0.025370169975747113,
+          "ci95_lo": 0.022371613844699306,
+          "mean": 0.023910880914210546
+        },
+        "hallucination_rate": {
+          "ci95_hi": 0.3287391021264186,
+          "ci95_lo": 0.3209953424770407,
+          "mean": 0.3247114194955443
+        },
+        "laterality_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "medication_f1": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "n": 100,
+        "negation_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "omission_rate": {
+          "ci95_hi": 0.1433333333333333,
+          "ci95_lo": 0.08333333333333331,
+          "mean": 0.11333333333333333
+        },
+        "rouge_l": {
+          "ci95_hi": 0.9886611259229938,
+          "ci95_lo": 0.9871303461983391,
+          "mean": 0.9878820866747101
+        },
+        "wer": {
+          "ci95_hi": 0.025370169975747113,
+          "ci95_lo": 0.022371613844699306,
+          "mean": 0.023910880914210546
+        }
+      },
+      "rag_grounded_verified": {
+        "dose_exact_match": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "edit_distance_normalized": {
+          "ci95_hi": 0.02642167653224812,
+          "ci95_lo": 0.022835265343034487,
+          "mean": 0.024726872405146545
+        },
+        "hallucination_rate": {
+          "ci95_hi": 0.329026284493826,
+          "ci95_lo": 0.32094667221511664,
+          "mean": 0.3250193706700367
+        },
+        "laterality_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "medication_f1": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "n": 100,
+        "negation_accuracy": {
+          "ci95_hi": 1.0,
+          "ci95_lo": 1.0,
+          "mean": 1.0
+        },
+        "omission_rate": {
+          "ci95_hi": 0.13,
+          "ci95_lo": 0.07333333333333333,
+          "mean": 0.10333333333333332
+        },
+        "rouge_l": {
+          "ci95_hi": 0.9884115306881739,
+          "ci95_lo": 0.9865661963976238,
+          "mean": 0.987461244783721
+        },
+        "wer": {
+          "ci95_hi": 0.02642167653224812,
+          "ci95_lo": 0.022835265343034487,
+          "mean": 0.024726872405146545
+        }
+      }
+    },
+    "headline_note": "Stub pipeline. These figures are seeded synthetic perturbations, not measured model or clinician results.",
+    "n_rows": 400,
+    "overall_hallucination_rate": 0.3265245665470877,
+    "overall_omission_rate": 0.1075
+  }
+}

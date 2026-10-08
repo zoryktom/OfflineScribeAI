@@ -1,6 +1,6 @@
 PYTHON := $(shell if [ -x "$(CURDIR)/backend/.venv/bin/python" ]; then echo "$(CURDIR)/backend/.venv/bin/python"; else command -v python3; fi)
 
-.PHONY: install test lint eval eval-full annotate paper release test-ui
+.PHONY: install test lint eval eval-full validate annotate paper release test-ui
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -19,6 +19,9 @@ eval:
 
 eval-full:
 	$(PYTHON) -m offlinescribe.cli eval run --config experiments/configs/ablation_v1.yaml
+
+validate:
+	$(PYTHON) -m offlinescribe.cli validate --config experiments/configs/pilot.yaml
 
 annotate:
 	$(PYTHON) -m offlinescribe.cli annotate --encounter E001 --condition baseline --annotator A1 --non-interactive

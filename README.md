@@ -6,7 +6,7 @@
 
 **Project website:** https://zoryktom.github.io/OfflineScribeAI/
 
-Repository policy: no real patient data, no private prompt/chat logs, and no co-authored-by commit metadata.
+Repository policy: no real patient data, no private prompt transcripts, and no extra commit authorship trailers.
 
 Research prototype. **Not for clinical use.** Not FDA-cleared, not clinically validated, not HIPAA-certified. No live EHR write.
 
@@ -49,12 +49,25 @@ The evaluation package lives in `src/offlinescribe/`. The interactive FastAPI/Re
 
 Human dual annotation, adjudication, and κ ≥ 0.6 on major/critical categories are **not** in this tree yet.
 
+## Validation Suite
+
+Run:
+
+```bash
+offlinescribe validate --config experiments/configs/pilot.yaml
+```
+
+This executes the seeded ablation, writes `validation_report.json`, and exports sample evidence graphs linking note sections to transcript support, planted stressors, verifier flags, and the human-review gate. Details: [`docs/VALIDATION.md`](docs/VALIDATION.md).
+
+A committed sample report is available at [`examples/validation/validation_report.json`](examples/validation/validation_report.json).
+
 ## Reproduce
 
 ```bash
 make install
 make test
 make eval
+make validate
 ```
 
 `make eval` runs the **sample** stub ablation (`experiments/configs/sample.yaml`) plus the existing backend planted-error harness. Full factorial config: `make eval-full` (still a stub generator unless you replace `src/offlinescribe/pipeline/run.py`).
