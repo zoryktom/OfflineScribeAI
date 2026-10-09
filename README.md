@@ -37,6 +37,31 @@ The evaluation package lives in `src/offlinescribe/`. The interactive FastAPI/Re
 
 **Privacy posture:** loopback API, local models, SQLCipher for visits, no cloud inference on the default path. That is a design choice, not a certification. See [`docs/model_card.md`](docs/model_card.md) and [`docs/data_card.md`](docs/data_card.md).
 
+## Ambient Transcription CLI
+
+The repository also includes an audited offline ambient transcription path:
+
+```bash
+offlinescribe make-sample sample.wav
+offlinescribe transcribe sample.wav --format soap --out note.json
+```
+
+This runs WAV ingestion, local transcription, SOAP structuring, SNOMED CT / RxNorm candidate extraction, and JSON schema validation inside a network-blocking privacy sandbox. The synthetic sample uses embedded WAV metadata so the end-to-end command is reproducible without downloading model weights.
+
+For real local speech recognition, install optional faster-whisper support and point to existing local weights:
+
+```bash
+pip install -e ".[whisper]"
+offlinescribe transcribe encounter.wav \
+  --backend faster-whisper \
+  --model-path /models/faster-whisper-small.en \
+  --compute-type int8 \
+  --format soap \
+  --out note.json
+```
+
+The runtime does not download model weights. `faster-whisper` requires `--model-path` or `OFFLINESCRIBE_MODEL_PATH` to point at a local ctranslate2 model.
+
 ## Benchmark
 
 **OfflineScribeAI-Bench:** 100 synthetic encounters (`data/synthetic/manifest.jsonl`), planted-token seed labels (not human IAA), error taxonomy, annotation guide.
@@ -48,6 +73,16 @@ The evaluation package lives in `src/offlinescribe/`. The interactive FastAPI/Re
 - Methods spec: [`docs/SPEC.md`](docs/SPEC.md)
 
 Human dual annotation, adjudication, and κ ≥ 0.6 on major/critical categories are **not** in this tree yet.
+
+The audio/SOAP benchmark harness can be run with:
+
+```bash
+python -m offlinescribe.benchmark sample.wav \
+  --reference benchmarks/reference_transcript.txt \
+  --out benchmark.json
+```
+
+It reports real-time factor, WER, peak Python RAM allocation, optional CUDA peak VRAM, SOAP structuring latency, and entity count.
 
 ## Validation Suite
 

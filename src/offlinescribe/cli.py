@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+from typing import Any
 
+from offlinescribe.ambient import process_audio_to_note
+from offlinescribe.audio.synthetic import DEFAULT_SYNTHETIC_TRANSCRIPT, write_synthetic_wav
+from offlinescribe.audio.transcriber import TranscriptionConfig, transcriber_from_config
 from offlinescribe.eval import annotate as annotate_mod
 from offlinescribe.eval import human_eval as human_eval_mod
 from offlinescribe.eval.ablations import run_ablation
@@ -15,6 +20,7 @@ from offlinescribe.io.audit import append, hash_payload
 from offlinescribe.io.deid import deidentify
 from offlinescribe.io.fhir import write_dry_run
 from offlinescribe.pipeline.run import generate_note
+from offlinescribe.privacy import NetworkSandbox, NetworkSandboxViolation
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,6 +73,23 @@ def main(argv: list[str] | None = None) -> int:
     p_val.add_argument("--report", default="")
     p_val.add_argument("--graphs", default="")
     p_val.add_argument("--graph-limit", type=int, default=3)
+
+    p_transcribe = sub.add_parser("transcribe", help="Transcribe local audio and optionally structure SOAP JSON")
+    p_transcribe.add_argument("audio_path", help="Path to a local WAV file")
+    p_transcribe.add_argument("--format", choices=["soap", "transcript"], default="soap")
+    p_transcribe.add_argument("--out", help="Write output JSON/text to this path. Defaults to stdout.")
+    p_transcribe.add_argument("--backend", choices=["auto", "metadata", "faster-whisper"], default="auto")
+    p_transcribe.add_argument("--model-path", help="Local faster-whisper/ctranslate2 model path")
+    p_transcribe.add_argument("--compute-type", default="int8", help="ctranslate2 compute type, e.g. int8 or float16")
+    p_transcribe.add_argument("--device", default="auto", help="Inference device for faster-whisper")
+    p_transcribe.add_argument("--chunk-seconds", type=float, default=15.0)
+    p_transcribe.add_argument("--language", default="en")
+    p_transcribe.add_argument("--beam-size", type=int, default=5)
+
+    p_sample = sub.add_parser("make-sample", help="Create a deterministic synthetic WAV with embedded transcript")
+    p_sample.add_argument("output_path")
+    p_sample.add_argument("--duration-seconds", type=float, default=4.0)
+    p_sample.add_argument("--transcript", default=DEFAULT_SYNTHETIC_TRANSCRIPT)
 
     args = parser.parse_args(argv)
     if args.cmd == "annotate":
@@ -149,7 +172,47 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps({"passed": report["passed"], "report": report["report_path"]}, indent=2))
         return 0 if report["passed"] else 1
+    if args.cmd == "transcribe":
+        return _handle_transcribe(args)
+    if args.cmd == "make-sample":
+        write_synthetic_wav(
+            args.output_path,
+            transcript=args.transcript,
+            duration_seconds=args.duration_seconds,
+        )
+        print(args.output_path)
+        return 0
     return 2
+
+
+def _handle_transcribe(args: argparse.Namespace) -> int:
+    config = TranscriptionConfig(
+        backend=args.backend,
+        model_path=args.model_path,
+        compute_type=args.compute_type,
+        device=args.device,
+        chunk_seconds=args.chunk_seconds,
+        language=args.language,
+        beam_size=args.beam_size,
+    )
+    try:
+        if args.format == "soap":
+            output: str | dict[str, Any] = process_audio_to_note(args.audio_path, config)
+            payload = json.dumps(output, indent=2, sort_keys=True)
+        else:
+            with NetworkSandbox("audio transcription"):
+                transcriber = transcriber_from_config(config)
+                result = transcriber.transcribe(Path(args.audio_path))
+            payload = result.text
+    except NetworkSandboxViolation as exc:
+        print(f"offline privacy violation: {exc}", file=sys.stderr)
+        return 2
+
+    if args.out:
+        Path(args.out).write_text(payload + ("\n" if not payload.endswith("\n") else ""), encoding="utf-8")
+    else:
+        print(payload)
+    return 0
 
 
 def _load(manifest: Path, encounter_id: str) -> Encounter:
